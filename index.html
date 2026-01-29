@@ -59,7 +59,7 @@ button {
 
 <div class="card">
 
-<textarea id="beskrivelse" placeholder="Arbeidsbeskrivelse (f.eks: Rengjøring, riving, avfall 1000kr)"></textarea>
+<textarea id="beskrivelse" placeholder="Arbeidsbeskrivelse (eks: 4t riving, 3t rengjøring, avfall 2000kr)"></textarea>
 
 <input id="timepris" type="number" placeholder="Timepris (kr)">
 
@@ -81,43 +81,49 @@ function beregn() {
   }
 
   let timer = 0;
-  let ekstra = 0;
+  let avfall = 0;
   let detaljer = [];
 
-  // AUTOMATISK TOLKNING
-  if (tekst.includes("rengjør")) {
-    timer += 3;
-    detaljer.push("Rengjøring: 3 t");
+  // Finn timer (4t, 3t osv)
+  const timerMatch = tekst.match(/(\d+)\s*t/g);
+  if (timerMatch) {
+    timerMatch.forEach(t => {
+      timer += parseInt(t);
+    });
   }
 
-  if (tekst.includes("riving")) {
-    timer += 4;
-    detaljer.push("Riving: 4 t");
-  }
+  // Type arbeid
+  if (tekst.includes("rengjør")) detaljer.push("Rengjøring");
+  if (tekst.includes("riving")) detaljer.push("Riving");
 
-  // Finn ekstra kostnader (eks: avfall 1000kr)
-  const match = tekst.match(/(\d+)\s*kr/);
-  if (match) {
-    ekstra = parseInt(match[1]);
-    detaljer.push("Ekstra kostnad: " + ekstra + " kr");
+  // Avfall
+  const avfallMatch = tekst.match(/avfall\s*(\d+)/);
+  if (avfallMatch) {
+    avfall = parseInt(avfallMatch[1]);
   }
 
   const arbeid = timer * timepris;
-  const total = arbeid + ekstra;
+  const subtotal = arbeid + avfall;
+  const moms = Math.round(subtotal * 0.25);
+  const total = subtotal + moms;
 
   document.getElementById("resultat").innerHTML = `
-    <strong>Spesifikasjon:</strong><br>
-    ${detaljer.join("<br>")}<br><br>
+    <strong>Spesifikasjon</strong><br>
+    Arbeid: ${detaljer.join(", ")}<br>
     Timer: ${timer} t<br>
-    Timepris: ${timepris} kr<br>
+    Timepris: ${timepris} kr<br><br>
+
     Arbeid: ${arbeid} kr<br>
-    Ekstra: ${ekstra} kr<br><br>
-    <strong>Total: ${total} kr</strong>
+    Avfall: ${avfall} kr<br>
+    <strong>Sum eks. mva:</strong> ${subtotal} kr<br>
+    MVA (25%): ${moms} kr<br><br>
+
+    <strong>Total inkl. mva: ${total} kr</strong>
   `;
 }
 
 function lagPDF() {
-  alert("PDF-generering legges til i neste steg 👍");
+  alert("PDF-generering kommer i neste steg 👍");
 }
 </script>
 
