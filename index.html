@@ -1,65 +1,69 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Min Pris</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Min Pris</title>
 
-<!-- IKON -->
-<link rel="icon" href="icon.jpeg" type="image/jpeg">
-<link rel="apple-touch-icon" href="icon.jpeg">
+  <!-- IKONER -->
+  <link rel="apple-touch-icon" href="icons/192.jpeg">
+  <link rel="icon" type="image/jpeg" href="icons/192.jpeg">
 
-<!-- PDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ffffff">
 
-<style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f4f4;
-  padding: 20px;
-  text-align: center;
-}
+  <!-- PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-.card {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  max-width: 420px;
-  margin: auto;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+      text-align: center;
+    }
 
-input, textarea {
-  width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 16px;
-}
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 420px;
+      margin: auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
 
-textarea {
-  min-height: 120px;
-  resize: vertical;
-}
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
 
-button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  background: #007bff;
-  color: white;
-}
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
 
-.result {
-  margin-top: 15px;
-  text-align: left;
-  font-size: 15px;
-}
-</style>
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      background: #007bff;
+      color: white;
+    }
+
+    .result {
+      margin-top: 15px;
+      text-align: left;
+      font-size: 15px;
+    }
+  </style>
 </head>
 
 <body>
@@ -68,7 +72,7 @@ button {
 
 <div class="card">
 
-<textarea id="beskrivelse" placeholder="Eksempel:
+<textarea id="beskrivelse" placeholder="Eks:
 Bad: 4t riving, 3t rengjøring
 Soverom: 8t riving, 7t rengjøring
 Avfall: 1000kr"></textarea>
@@ -79,7 +83,6 @@ Avfall: 1000kr"></textarea>
 <button onclick="lagPDF()">Last ned PDF</button>
 
 <div class="result" id="resultat"></div>
-
 </div>
 
 <script>
@@ -92,35 +95,34 @@ function beregn() {
     return;
   }
 
-  let rivingTimer = 0;
-  let rengjoringTimer = 0;
+  let riving = 0;
+  let rengjoring = 0;
   let avfall = 0;
 
   const matcher = tekst.matchAll(/(\d+)\s*t\s*(riving|rengjøring)/g);
   for (const m of matcher) {
-    if (m[2] === "riving") rivingTimer += parseInt(m[1]);
-    if (m[2] === "rengjøring") rengjoringTimer += parseInt(m[1]);
+    if (m[2] === "riving") riving += parseInt(m[1]);
+    if (m[2] === "rengjøring") rengjoring += parseInt(m[1]);
   }
 
   const avfallMatch = tekst.match(/avfall[^0-9]*(\d+)/);
   if (avfallMatch) avfall = parseInt(avfallMatch[1]);
 
-  const arbeidTimer = rivingTimer + rengjoringTimer;
-  const arbeidSum = arbeidTimer * timepris;
-  const subtotal = arbeidSum + avfall;
-  const moms = Math.round(subtotal * 0.25);
-  const total = subtotal + moms;
+  const arbeid = (riving + rengjoring) * timepris;
+  const subtotal = arbeid + avfall;
+  const mva = Math.round(subtotal * 0.25);
+  const total = subtotal + mva;
 
   document.getElementById("resultat").innerHTML = `
     <strong>Spesifikasjon</strong><br>
-    Riving: ${rivingTimer} t<br>
-    Rengjøring: ${rengjoringTimer} t<br>
+    Riving: ${riving} t<br>
+    Rengjøring: ${rengjoring} t<br>
     Timepris: ${timepris} kr<br><br>
 
-    Arbeid: ${arbeidSum} kr<br>
+    Arbeid: ${arbeid} kr<br>
     Avfall: ${avfall} kr<br>
     <strong>Sum eks. mva:</strong> ${subtotal} kr<br>
-    MVA (25%): ${moms} kr<br><br>
+    MVA (25%): ${mva} kr<br><br>
 
     <strong>Total inkl. mva: ${total} kr</strong>
   `;
@@ -134,7 +136,6 @@ function lagPDF() {
   const resultat = document.getElementById("resultat").innerText;
 
   let y = 20;
-
   doc.setFontSize(18);
   doc.text("Min Pris – Tilbud", 14, y);
   y += 10;
@@ -143,8 +144,8 @@ function lagPDF() {
   doc.text("Arbeidsbeskrivelse:", 14, y);
   y += 8;
 
-  tekst.split("\n").forEach(line => {
-    doc.text(line, 14, y);
+  tekst.split("\n").forEach(l => {
+    doc.text(l, 14, y);
     y += 6;
   });
 
@@ -152,8 +153,8 @@ function lagPDF() {
   doc.text("Resultat:", 14, y);
   y += 8;
 
-  resultat.split("\n").forEach(line => {
-    doc.text(line, 14, y);
+  resultat.split("\n").forEach(l => {
+    doc.text(l, 14, y);
     y += 6;
   });
 
