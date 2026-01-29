@@ -34,6 +34,11 @@ input, textarea {
   font-size: 16px;
 }
 
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
 button {
   width: 100%;
   padding: 12px;
@@ -59,7 +64,10 @@ button {
 
 <div class="card">
 
-<textarea id="beskrivelse" placeholder="Arbeidsbeskrivelse (eks: 4t riving, 3t rengjøring, avfall 2000kr)"></textarea>
+<textarea id="beskrivelse" placeholder="Eks:
+4t riving, 3t rengjøring
+Bad: 6t riving
+Avfall: 4000kr"></textarea>
 
 <input id="timepris" type="number" placeholder="Timepris (kr)">
 
@@ -80,40 +88,39 @@ function beregn() {
     return;
   }
 
-  let timer = 0;
+  let rivingTimer = 0;
+  let rengjoringTimer = 0;
   let avfall = 0;
-  let detaljer = [];
 
-  // Finn timer (4t, 3t osv)
-  const timerMatch = tekst.match(/(\d+)\s*t/g);
-  if (timerMatch) {
-    timerMatch.forEach(t => {
-      timer += parseInt(t);
-    });
+  // Finn "4t riving", "3t rengjøring"
+  const matcher = tekst.matchAll(/(\d+)\s*t\s*(riving|rengjøring)/g);
+  for (const match of matcher) {
+    const timer = parseInt(match[1]);
+    const type = match[2];
+
+    if (type === "riving") rivingTimer += timer;
+    if (type === "rengjøring") rengjoringTimer += timer;
   }
 
-  // Type arbeid
-  if (tekst.includes("rengjør")) detaljer.push("Rengjøring");
-  if (tekst.includes("riving")) detaljer.push("Riving");
-
   // Avfall
-  const avfallMatch = tekst.match(/avfall\s*(\d+)/);
+  const avfallMatch = tekst.match(/avfall[^0-9]*(\d+)/);
   if (avfallMatch) {
     avfall = parseInt(avfallMatch[1]);
   }
 
-  const arbeid = timer * timepris;
-  const subtotal = arbeid + avfall;
+  const arbeidTimer = rivingTimer + rengjoringTimer;
+  const arbeidSum = arbeidTimer * timepris;
+  const subtotal = arbeidSum + avfall;
   const moms = Math.round(subtotal * 0.25);
   const total = subtotal + moms;
 
   document.getElementById("resultat").innerHTML = `
     <strong>Spesifikasjon</strong><br>
-    Arbeid: ${detaljer.join(", ")}<br>
-    Timer: ${timer} t<br>
+    Riving: ${rivingTimer} t<br>
+    Rengjøring: ${rengjoringTimer} t<br>
     Timepris: ${timepris} kr<br><br>
 
-    Arbeid: ${arbeid} kr<br>
+    Arbeid: ${arbeidSum} kr<br>
     Avfall: ${avfall} kr<br>
     <strong>Sum eks. mva:</strong> ${subtotal} kr<br>
     MVA (25%): ${moms} kr<br><br>
