@@ -1,151 +1,69 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Forsikringskalkyle</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Min Pris</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/192.jpeg">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
   <style>
     body {
-      font-family: system-ui, Arial, sans-serif;
-      background: #f4f6f8;
+      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
-    }
-
-    .container {
-      max-width: 700px;
-      margin: auto;
-      padding: 16px;
-    }
-
-    h1 {
+      padding: 20px;
+      background: #f5f5f5;
       text-align: center;
     }
 
-    textarea, input {
+    h1 {
+      margin-top: 20px;
+    }
+
+    .box {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 400px;
+      margin: 30px auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    input {
       width: 100%;
-      padding: 12px;
-      margin-top: 8px;
+      padding: 10px;
+      margin: 10px 0;
       font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
     }
 
     button {
+      padding: 12px;
       width: 100%;
-      padding: 14px;
-      margin-top: 12px;
-      font-size: 18px;
+      background: #007bff;
+      color: white;
       border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .calc-btn {
-      background: black;
-      color: white;
-    }
-
-    .pdf-btn {
-      background: #2d7ef7;
-      color: white;
-    }
-
-    .result {
-      margin-top: 20px;
-      background: white;
-      padding: 16px;
       border-radius: 8px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-
-    td, th {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-      text-align: left;
-    }
-
-    .sum {
-      font-weight: bold;
-    }
-
-    @media print {
-      button {
-        display: none;
-      }
+      font-size: 16px;
     }
   </style>
 </head>
 
 <body>
-<div class="container">
+  <h1>🏠 Min Pris</h1>
 
-  <h1>Forsikringskalkyle</h1>
+  <div class="box">
+    <p>Regn ut kostnader enkelt</p>
 
-  <label><b>Arbeidsbeskrivelse:</b></label>
-  <textarea id="input" rows="6" placeholder="Skriv arbeidsbeskrivelse her..."></textarea>
+    <input type="number" placeholder="Pris">
+    <input type="number" placeholder="Antall">
 
-  <label>Timepris (kr)</label>
-  <input type="number" id="pris" value="650">
-
-  <button class="calc-btn" onclick="beregn()">Beregn</button>
-  <button class="pdf-btn" onclick="lagPDF()">Last ned PDF</button>
-
-  <div id="resultat" class="result"></div>
-
-</div>
-
-<script>
-function beregn() {
-  const tekst = document.getElementById("input").value.toLowerCase();
-  const pris = Number(document.getElementById("pris").value);
-
-  let riving = 0;
-  let rengjoring = 0;
-  let avfall = 0;
-
-  tekst.split("\n").forEach(linje => {
-    const r = linje.match(/riving\s*(\d+)/);
-    const v = linje.match(/rengjøring\s*(\d+)/);
-    const a = linje.match(/avfall\s*(\d+)/);
-
-    if (r) riving += Number(r[1]);
-    if (v) rengjoring += Number(v[1]);
-    if (a) avfall += Number(a[1]);
-  });
-
-  const arbeid = (riving + rengjoring) * pris;
-  const sumEks = arbeid + avfall;
-  const mva = sumEks * 0.25;
-  const total = sumEks + mva;
-
-  document.getElementById("resultat").innerHTML = `
-    <h3>Arbeidsbeskrivelse</h3>
-    <pre>${document.getElementById("input").value}</pre>
-
-    <h3>Kostnadsoversikt</h3>
-    <table>
-      <tr><td>Riving</td><td>${riving} t</td><td>${riving * pris} kr</td></tr>
-      <tr><td>Rengjøring</td><td>${rengjoring} t</td><td>${rengjoring * pris} kr</td></tr>
-      <tr><td>Avfall</td><td></td><td>${avfall} kr</td></tr>
-      <tr class="sum"><td>Sum eks. mva</td><td></td><td>${sumEks} kr</td></tr>
-      <tr><td>MVA (25%)</td><td></td><td>${mva.toFixed(0)} kr</td></tr>
-      <tr class="sum"><td>Total</td><td></td><td>${total.toFixed(0)} kr</td></tr>
-    </table>
-  `;
-}
-
-function lagPDF() {
-  window.print();
-}
-</script>
-
+    <button>Beregn</button>
+  </div>
 </body>
 </html>
