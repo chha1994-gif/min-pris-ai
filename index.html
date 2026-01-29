@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Min Pris</title>
 
@@ -11,59 +11,78 @@
   <link rel="apple-touch-icon" href="icons/192.jpeg">
   <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
+      background: #f4f4f4;
       padding: 20px;
-      background: #f5f5f5;
       text-align: center;
     }
 
-    h1 {
-      margin-top: 20px;
-    }
-
-    .box {
+    .card {
       background: white;
       padding: 20px;
       border-radius: 12px;
-      max-width: 400px;
-      margin: 30px auto;
+      max-width: 420px;
+      margin: auto;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
 
-    input {
+    input, textarea {
       width: 100%;
       padding: 10px;
-      margin: 10px 0;
+      margin: 8px 0;
       font-size: 16px;
     }
 
     button {
-      padding: 12px;
       width: 100%;
+      padding: 12px;
       background: #007bff;
       color: white;
       border: none;
       border-radius: 8px;
       font-size: 16px;
+      margin-top: 10px;
+    }
+
+    .result {
+      margin-top: 15px;
+      font-weight: bold;
     }
   </style>
 </head>
-
 <body>
+
   <h1>🏠 Min Pris</h1>
 
-  <div class="box">
-    <p>Regn ut kostnader enkelt</p>
+  <div class="card">
+    <input id="desc" placeholder="Arbeidsbeskrivelse">
 
-    <input type="number" placeholder="Pris">
-    <input type="number" placeholder="Antall">
+    <input id="price" type="number" placeholder="Pris per stk">
+    <input id="qty" type="number" placeholder="Antall">
 
-    <button>Beregn</button>
+    <button onclick="beregn()">Beregn</button>
+    <button onclick="lagPDF()">Last ned PDF</button>
+
+    <div class="result" id="resultat"></div>
   </div>
+
+<script>
+function beregn() {
+  const pris = Number(document.getElementById("price").value);
+  const antall = Number(document.getElementById("qty").value);
+  const sum = pris * antall;
+
+  document.getElementById("resultat").innerText =
+    "Sum: " + sum.toFixed(2) + " kr";
+}
+
+function lagPDF() {
+  alert("PDF-funksjon kommer – kan kobles på neste steg 👍");
+}
+</script>
+
 </body>
 </html>
