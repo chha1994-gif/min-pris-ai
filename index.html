@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Min Pris</title>
 
-<link rel="apple-touch-icon" href="icons/192.jpeg">
-<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="icons/192.png">
+<link rel="apple-touch-icon" href="icons/192.png">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
 body {
@@ -92,21 +94,14 @@ function beregn() {
   let rengjoringTimer = 0;
   let avfall = 0;
 
-  // Finn "4t riving", "3t rengjøring"
   const matcher = tekst.matchAll(/(\d+)\s*t\s*(riving|rengjøring)/g);
-  for (const match of matcher) {
-    const timer = parseInt(match[1]);
-    const type = match[2];
-
-    if (type === "riving") rivingTimer += timer;
-    if (type === "rengjøring") rengjoringTimer += timer;
+  for (const m of matcher) {
+    if (m[2] === "riving") rivingTimer += parseInt(m[1]);
+    if (m[2] === "rengjøring") rengjoringTimer += parseInt(m[1]);
   }
 
-  // Avfall
   const avfallMatch = tekst.match(/avfall[^0-9]*(\d+)/);
-  if (avfallMatch) {
-    avfall = parseInt(avfallMatch[1]);
-  }
+  if (avfallMatch) avfall = parseInt(avfallMatch[1]);
 
   const arbeidTimer = rivingTimer + rengjoringTimer;
   const arbeidSum = arbeidTimer * timepris;
@@ -130,7 +125,37 @@ function beregn() {
 }
 
 function lagPDF() {
-  alert("PDF-generering kommer i neste steg 👍");
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const tekst = document.getElementById("beskrivelse").value;
+  const resultat = document.getElementById("resultat").innerText;
+
+  let y = 20;
+
+  doc.setFontSize(18);
+  doc.text("Min Pris – Tilbud", 14, y);
+  y += 10;
+
+  doc.setFontSize(12);
+  doc.text("Arbeidsbeskrivelse:", 14, y);
+  y += 8;
+
+  tekst.split("\n").forEach(line => {
+    doc.text(line, 14, y);
+    y += 6;
+  });
+
+  y += 6;
+  doc.text("Resultat:", 14, y);
+  y += 8;
+
+  resultat.split("\n").forEach(line => {
+    doc.text(line, 14, y);
+    y += 6;
+  });
+
+  doc.save("tilbud.pdf");
 }
 </script>
 
