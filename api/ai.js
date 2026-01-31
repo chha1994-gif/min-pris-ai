@@ -6,13 +6,7 @@ const openai = new OpenAI({
 
 export default async function handler(req, res) {
   try {
-    const {
-      tekst,
-      timepris,
-      kmPerDag,
-      avfall,
-      forbrukPerDag
-    } = req.body;
+    const { tekst, timepris, km, avfall, forbruk } = req.body;
 
     const ai = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -20,11 +14,10 @@ export default async function handler(req, res) {
         {
           role: "user",
           content: `
-Hvor mange arbeidstimer vil denne jobben ta?
-Svar kun med et tall.
+Estimer antall arbeidstimer basert på denne teksten:
+"${tekst}"
 
-Jobb:
-${tekst}
+Svar KUN med et tall (timer).
 `
         }
       ]
@@ -33,19 +26,23 @@ ${tekst}
     const timer = parseInt(ai.choices[0].message.content);
     const dager = Math.ceil(timer / 7.5);
 
-    const total =
-      (timer * timepris) +
-      (dager * kmPerDag * 15) +
-      (dager * forbrukPerDag) +
-      Number(avfall);
+    const arbeidskost = timer * timepris;
+    const reisekost = dager * km * 5;
+    const forbrukTotalt = dager * forbruk;
 
-    res.json({
+    const sumEks = arbeidskost + reisekost + avfall + forbrukTotalt;
+    const mva = Math.round(sumEks * 0.25);
+    const total = sumEks + mva;
+
+    res.status(200).json({
       timer,
       dager,
+      pris_eks: sumEks,
+      mva,
       total
     });
 
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 }
