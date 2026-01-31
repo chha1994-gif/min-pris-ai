@@ -2,23 +2,24 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MinPris</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f2f2f2;
+      background: #f3f3f3;
       padding: 20px;
     }
-    .box {
+    .card {
       max-width: 500px;
       margin: auto;
       background: white;
       padding: 20px;
-      border-radius: 10px;
+      border-radius: 12px;
     }
     textarea, input {
       width: 100%;
-      padding: 12px;
+      padding: 10px;
       margin: 8px 0;
       border-radius: 6px;
       border: 1px solid #ccc;
@@ -29,7 +30,7 @@
     }
     button {
       width: 100%;
-      padding: 14px;
+      padding: 12px;
       margin-top: 10px;
       background: black;
       color: white;
@@ -38,44 +39,46 @@
       font-size: 16px;
       cursor: pointer;
     }
-    .result {
-      margin-top: 20px;
-      background: #f7f7f7;
-      padding: 15px;
-      border-radius: 6px;
+    button:hover {
+      opacity: 0.9;
+    }
+    .link {
+      margin-top: 5px;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
 
-<div class="box">
+<div class="card">
   <h2>🏠 MinPris</h2>
 
   <textarea id="tekst" placeholder="Beskriv jobben..."></textarea>
 
-  <input id="timepris" placeholder="Timepris (kr)" type="number">
-  <input id="km" placeholder="Km per dag" type="number">
+  <input id="timepris" type="number" placeholder="Timepris (kr)">
+  <input id="km" type="number" placeholder="Km per dag">
 
-  <small>Usikker? <a href="https://www.google.com/maps" target="_blank">Sjekk Google Maps</a></small>
+  <div class="link">
+    Usikker? <a href="https://www.google.com/maps" target="_blank">Sjekk Google Maps</a>
+  </div>
 
-  <input id="avfall" placeholder="Avfall (kr)" type="number">
-  <input id="forbruk" placeholder="Forbruk per dag (kr)" type="number">
+  <input id="avfall" type="number" placeholder="Avfall (kr)">
+  <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)">
 
   <button onclick="beregn()">Beregn</button>
-
-  <div class="result" id="resultat"></div>
-
-  <button onclick="alert('PDF kommer snart')">Last ned tilbud (PDF)</button>
+  <button onclick="lastNedPDF()">Last ned tilbud (PDF)</button>
 </div>
 
 <script>
+let resultat = {};
+
 async function beregn() {
   const data = {
     tekst: document.getElementById("tekst").value,
     timepris: Number(document.getElementById("timepris").value),
     km: Number(document.getElementById("km").value),
     avfall: Number(document.getElementById("avfall").value),
-    forbruk: Number(document.getElementById("forbruk").value)
+    forbruk: Number(document.getElementById("forbruk").value),
   };
 
   const res = await fetch("/api/ai", {
@@ -84,15 +87,23 @@ async function beregn() {
     body: JSON.stringify(data)
   });
 
-  const json = await res.json();
+  resultat = await res.json();
+  alert(Totalt: ${resultat.total} kr inkl mva);
+}
 
-  document.getElementById("resultat").innerHTML = `
-    <b>⏱ Timer:</b> ${json.timer} t<br>
-    <b>📆 Dager:</b> ${json.dager}<br>
-    <b>💰 Pris eks. mva:</b> ${json.pris_eks} kr<br>
-    <b>🧾 MVA (25%):</b> ${json.mva} kr<br>
-    <b>✅ Totalpris:</b> <b>${json.total} kr</b>
-  `;
+async function lastNedPDF() {
+  const res = await fetch("/api/pdf", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(resultat)
+  });
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "tilbud.pdf";
+  a.click();
 }
 </script>
 
