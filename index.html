@@ -3,22 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <title>MinPris</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      display: flex;
-      justify-content: center;
-      padding: 30px;
+      background: #f2f2f2;
     }
 
-    .box {
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
       background: white;
       padding: 25px;
       border-radius: 10px;
-      max-width: 500px;
-      width: 100%;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
@@ -26,24 +22,34 @@
       text-align: center;
     }
 
-    input, textarea, button {
+    textarea, input {
       width: 100%;
       padding: 12px;
       margin-top: 10px;
-      font-size: 16px;
       border-radius: 6px;
       border: 1px solid #ccc;
+      font-size: 16px;
     }
 
     textarea {
-      resize: vertical;
-      min-height: 120px;
+      height: 120px;
+      resize: none;
     }
 
     button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
       background: black;
       color: white;
       cursor: pointer;
+    }
+
+    button:hover {
+      background: #333;
     }
 
     .link {
@@ -52,14 +58,14 @@
     }
 
     .link a {
-      color: blue;
-      text-decoration: underline;
+      color: #007bff;
+      text-decoration: none;
     }
   </style>
 </head>
 <body>
 
-<div class="box">
+<div class="container">
   <h1>🏠 MinPris</h1>
 
   <textarea id="tekst" placeholder="Beskriv jobben..."></textarea>
@@ -71,34 +77,38 @@
     Usikker? <a href="https://www.google.com/maps" target="_blank">Sjekk Google Maps</a>
   </div>
 
-  <input id="avfall" type="number" placeholder="Avfall (kr)" />
-  <input id="forbruk" type="number" placeholder="Forbruk (kr)" />
+  <input id="avfall" type="number" placeholder="Avfall (kr per dag)" />
+  <input id="forbruk" type="number" placeholder="Forbruk (kr per dag)" />
 
-  <button onclick="beregn()">Beregn</button>
-  <button onclick="lastNedPDF()">Last ned tilbud (PDF)</button>
+  <button id="beregnBtn" type="button">Beregn</button>
+  <button id="pdfBtn" type="button">Last ned tilbud (PDF)</button>
 </div>
 
 <script>
+document.getElementById("beregnBtn").addEventListener("click", beregn);
+
 async function beregn() {
+  const body = {
+    tekst: document.getElementById("tekst").value,
+    timepris: Number(document.getElementById("timepris").value),
+    km: Number(document.getElementById("km").value),
+    avfall: Number(document.getElementById("avfall").value),
+    forbruk: Number(document.getElementById("forbruk").value)
+  };
+
   const res = await fetch("/api/ai", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      tekst: document.getElementById("tekst").value,
-      timepris: Number(document.getElementById("timepris").value),
-      km: Number(document.getElementById("km").value),
-      avfall: Number(document.getElementById("avfall").value),
-      forbruk: Number(document.getElementById("forbruk").value)
-    })
+    body: JSON.stringify(body)
   });
 
   const data = await res.json();
-  alert("Totalpris: " + data.total + " kr");
+  alert(Estimert totalpris: ${data.total} kr);
 }
 
-function lastNedPDF() {
+document.getElementById("pdfBtn").addEventListener("click", () => {
   window.open("/api/pdf", "_blank");
-}
+});
 </script>
 
 </body>
