@@ -7,88 +7,70 @@
     body {
       font-family: Arial, sans-serif;
       background: #f2f2f2;
+      padding: 20px;
     }
-
-    .container {
-      max-width: 600px;
-      margin: 50px auto;
+    .box {
+      max-width: 500px;
+      margin: auto;
       background: white;
-      padding: 25px;
+      padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-
-    h1 {
-      text-align: center;
-    }
-
     textarea, input {
       width: 100%;
       padding: 12px;
-      margin-top: 10px;
+      margin: 8px 0;
       border-radius: 6px;
       border: 1px solid #ccc;
       font-size: 16px;
     }
-
     textarea {
       height: 120px;
-      resize: none;
     }
-
     button {
       width: 100%;
       padding: 14px;
-      margin-top: 15px;
-      font-size: 16px;
-      border: none;
-      border-radius: 6px;
+      margin-top: 10px;
       background: black;
       color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
       cursor: pointer;
     }
-
-    button:hover {
-      background: #333;
-    }
-
-    .link {
-      font-size: 14px;
-      margin-top: 5px;
-    }
-
-    .link a {
-      color: #007bff;
-      text-decoration: none;
+    .result {
+      margin-top: 20px;
+      background: #f7f7f7;
+      padding: 15px;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>🏠 MinPris</h1>
+<div class="box">
+  <h2>🏠 MinPris</h2>
 
   <textarea id="tekst" placeholder="Beskriv jobben..."></textarea>
 
-  <input id="timepris" type="number" placeholder="Timepris (kr)" />
-  <input id="km" type="number" placeholder="Km per dag" />
+  <input id="timepris" placeholder="Timepris (kr)" type="number">
+  <input id="km" placeholder="Km per dag" type="number">
 
-  <div class="link">
-    Usikker? <a href="https://www.google.com/maps" target="_blank">Sjekk Google Maps</a>
-  </div>
+  <small>Usikker? <a href="https://www.google.com/maps" target="_blank">Sjekk Google Maps</a></small>
 
-  <input id="avfall" type="number" placeholder="Avfall (kr per dag)" />
-  <input id="forbruk" type="number" placeholder="Forbruk (kr per dag)" />
+  <input id="avfall" placeholder="Avfall (kr)" type="number">
+  <input id="forbruk" placeholder="Forbruk per dag (kr)" type="number">
 
-  <button id="beregnBtn" type="button">Beregn</button>
-  <button id="pdfBtn" type="button">Last ned tilbud (PDF)</button>
+  <button onclick="beregn()">Beregn</button>
+
+  <div class="result" id="resultat"></div>
+
+  <button onclick="alert('PDF kommer snart')">Last ned tilbud (PDF)</button>
 </div>
 
 <script>
-document.getElementById("beregnBtn").addEventListener("click", beregn);
-
 async function beregn() {
-  const body = {
+  const data = {
     tekst: document.getElementById("tekst").value,
     timepris: Number(document.getElementById("timepris").value),
     km: Number(document.getElementById("km").value),
@@ -99,16 +81,19 @@ async function beregn() {
   const res = await fetch("/api/ai", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    body: JSON.stringify(data)
   });
 
-  const data = await res.json();
-  alert(Estimert totalpris: ${data.total} kr);
-}
+  const json = await res.json();
 
-document.getElementById("pdfBtn").addEventListener("click", () => {
-  window.open("/api/pdf", "_blank");
-});
+  document.getElementById("resultat").innerHTML = `
+    <b>⏱ Timer:</b> ${json.timer} t<br>
+    <b>📆 Dager:</b> ${json.dager}<br>
+    <b>💰 Pris eks. mva:</b> ${json.pris_eks} kr<br>
+    <b>🧾 MVA (25%):</b> ${json.mva} kr<br>
+    <b>✅ Totalpris:</b> <b>${json.total} kr</b>
+  `;
+}
 </script>
 
 </body>
