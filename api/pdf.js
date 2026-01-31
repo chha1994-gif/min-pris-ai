@@ -5,27 +5,49 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { tekst, timer, total } = req.body;
+  const {
+    tekst,
+    timer,
+    dager,
+    prisEks,
+    mva,
+    total
+  } = req.body;
 
-  const doc = new PDFDocument();
-  const chunks = [];
+  const doc = new PDFDocument({ margin: 50 });
+  const buffers = [];
 
-  doc.on("data", (chunk) => chunks.push(chunk));
+  doc.on("data", buffers.push.bind(buffers));
   doc.on("end", () => {
-    const pdf = Buffer.concat(chunks);
+    const pdfData = Buffer.concat(buffers);
+
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "inline; filename=prisoverslag.pdf");
-    res.send(pdf);
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=tilbud.pdf"
+    );
+
+    res.send(pdfData);
   });
 
-  doc.fontSize(22).text("Prisoverslag", { align: "center" });
+  // ===== PDF INNHOLD =====
+  doc.fontSize(22).text("Tilbud – MinPris", { align: "center" });
   doc.moveDown();
 
-  doc.fontSize(12).text(Beskrivelse:\n${tekst});
+  doc.fontSize(12);
+  doc.text(Beskrivelse:\n${tekst});
   doc.moveDown();
 
-  doc.text(Estimert arbeidstid: ${timer} timer);
-  doc.text(Total pris: ${total} kr);
+  doc.text(Totale timer: ${timer} t);
+  doc.text(Antall dager: ${dager});
+  doc.moveDown();
+
+  doc.text(Pris eks. mva: ${prisEks} kr);
+  doc.text(MVA (25%): ${mva} kr);
+  doc.text(Totalpris: ${total} kr);
+
+  doc.moveDown(2);
+  doc.text("Tilbudet er gyldig i 14 dager.", { italic: true });
 
   doc.end();
 }
