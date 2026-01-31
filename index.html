@@ -1,3 +1,5 @@
+01:49
+Du har sendt
 <!DOCTYPE html>
 <html lang="no">
 <head>
@@ -5,15 +7,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Min Pris</title>
 
-  <!-- IKONER -->
   <link rel="apple-touch-icon" href="icons/192.jpeg">
   <link rel="icon" type="image/jpeg" href="icons/192.jpeg">
-
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#ffffff">
 
-  <!-- PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
@@ -44,7 +42,6 @@
 
     textarea {
       min-height: 120px;
-      resize: vertical;
     }
 
     button {
@@ -72,23 +69,25 @@
 
 <div class="card">
 
-<textarea id="beskrivelse" placeholder="Eks:
+  <textarea id="beskrivelse" placeholder="Eks:
 Bad: 4t riving, 3t rengjøring
 Soverom: 8t riving, 7t rengjøring
 Avfall: 1000kr"></textarea>
 
-<input id="timepris" type="number" placeholder="Timepris (kr)">
+  <input id="timepris" type="number" placeholder="Timepris (kr)">
+  <input id="kmPerDag" type="number" placeholder="Km per dag">
 
-<button onclick="beregn()">Beregn</button>
-<button onclick="lagPDF()">Last ned PDF</button>
+  <button onclick="beregn()">Beregn</button>
+  <button onclick="lagPDF()">Last ned PDF</button>
 
-<div class="result" id="resultat"></div>
+  <div class="result" id="resultat"></div>
 </div>
 
 <script>
 function beregn() {
   const tekst = document.getElementById("beskrivelse").value.toLowerCase();
   const timepris = Number(document.getElementById("timepris").value);
+  const kmPerDag = Number(document.getElementById("kmPerDag").value || 0);
 
   if (!tekst || !timepris) {
     alert("Fyll inn arbeidsbeskrivelse og timepris");
@@ -99,17 +98,21 @@ function beregn() {
   let rengjoring = 0;
   let avfall = 0;
 
-  const matcher = tekst.matchAll(/(\d+)\s*t\s*(riving|rengjøring)/g);
+  const matcher = tekst.matchAll(/(\d+)\s*t\s*(riving|rengjøring)/gi);
   for (const m of matcher) {
     if (m[2] === "riving") riving += parseInt(m[1]);
     if (m[2] === "rengjøring") rengjoring += parseInt(m[1]);
   }
 
-  const avfallMatch = tekst.match(/avfall[^0-9]*(\d+)/);
+  const avfallMatch = tekst.match(/avfall[^0-9]*(\d+)/i);
   if (avfallMatch) avfall = parseInt(avfallMatch[1]);
 
-  const arbeid = (riving + rengjoring) * timepris;
-  const subtotal = arbeid + avfall;
+  const totaleTimer = riving + rengjoring;
+  const dager = Math.ceil(totaleTimer / 7.5);
+  const kmPris = dager * kmPerDag * 15;
+
+  const arbeid = totaleTimer * timepris;
+  const subtotal = arbeid + avfall + kmPris;
   const mva = Math.round(subtotal * 0.25);
   const total = subtotal + mva;
 
@@ -117,10 +120,13 @@ function beregn() {
     <strong>Spesifikasjon</strong><br>
     Riving: ${riving} t<br>
     Rengjøring: ${rengjoring} t<br>
+    Arbeidstid: ${dager} dager<br>
     Timepris: ${timepris} kr<br><br>
 
     Arbeid: ${arbeid} kr<br>
     Avfall: ${avfall} kr<br>
+    km/per/dag (15kr): ${kmPris} kr<br><br>
+
     <strong>Sum eks. mva:</strong> ${subtotal} kr<br>
     MVA (25%): ${mva} kr<br><br>
 
