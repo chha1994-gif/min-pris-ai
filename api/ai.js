@@ -1,39 +1,51 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Only POST allowed" });
-  }
-
   try {
-    const { tekst, timepris, km, avfall, forbruk } = req.body;
+    const {
+      tekst,
+      timepris,
+      kmPerDag,
+      avfall,
+      forbrukPerDag
+    } = req.body;
 
-    const response = await openai.responses.create({
-      model: "gpt-4.1-mini",
-      input: `Estimer antall arbeidstimer basert på teksten: "${tekst}". 
-Svar kun med et tall.`,
+    const ai = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: `
+Hvor mange arbeidstimer vil denne jobben ta?
+Svar kun med et tall.
+
+Jobb:
+${tekst}
+`
+        }
+      ]
     });
 
-    const timer = parseInt(
-      response.output[0].content[0].text
-    );
-
+    const timer = parseInt(ai.choices[0].message.content);
     const dager = Math.ceil(timer / 7.5);
 
     const total =
-      timer * timepris +
-      km * 15 * dager +
-      avfall +
-      forbruk * dager;
+      (timer * timepris) +
+      (dager * kmPerDag * 15) +
+      (dager * forbrukPerDag) +
+      Number(avfall);
 
-    res.status(200).json({ timer, dager, total });
+    res.json({
+      timer,
+      dager,
+      total
+    });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Serverfeil" });
+    res.status(500).json({ error: err.message });
   }
 }
