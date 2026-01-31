@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Min Pris</title>
 
-  <!-- Cache-sikring -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -59,26 +58,28 @@
 
 <body>
 
-<h1>🏠 MinPris</h1>
+<h1>🏠 Min Pris</h1>
 
 <div class="card">
 
 <textarea id="beskrivelse" placeholder="Eks:
-Bad: 4t riving, 3t rengjøring
-Soverom: 8t riving, 7t rengjøring"></textarea>
+Bad: 4t riving, 3t rengjøring"></textarea>
 
 <input id="timepris" type="number" placeholder="Timepris (kr)">
 <input id="kmPerDag" type="number" placeholder="Km per dag">
 <input id="avfall" type="number" placeholder="Avfall totalt (kr)">
 <input id="forbrukPerDag" type="number" placeholder="Forbruk per dag (kr)">
 
-<button type="button" onclick="beregn()">Beregn</button>
-<button type="button" onclick="lagPDF()">Last ned PDF</button>
+<button id="beregnBtn">Beregn</button>
+<button id="pdfBtn">Last ned PDF</button>
 
 <div class="result" id="resultat"></div>
 </div>
 
 <script>
+document.getElementById("beregnBtn").addEventListener("click", beregn);
+document.getElementById("pdfBtn").addEventListener("click", lagPDF);
+
 function beregn() {
   const tekst = document.getElementById("beskrivelse").value.toLowerCase();
   const timepris = Number(document.getElementById("timepris").value);
@@ -100,14 +101,14 @@ function beregn() {
     if (m[2] === "rengjøring") rengjoring += parseInt(m[1]);
   }
 
-  const totaleTimer = riving + rengjoring;
-  const dager = Math.ceil(totaleTimer / 7.5);
+  const timer = riving + rengjoring;
+  const dager = Math.ceil(timer / 7.5);
 
-  const arbeid = totaleTimer * timepris;
+  const arbeid = timer * timepris;
   const kmPris = dager * kmPerDag * 15;
-  const forbrukTotal = dager * forbrukPerDag;
+  const forbruk = dager * forbrukPerDag;
 
-  const subtotal = arbeid + avfall + kmPris + forbrukTotal;
+  const subtotal = arbeid + avfall + kmPris + forbruk;
   const mva = Math.round(subtotal * 0.25);
   const total = subtotal + mva;
 
@@ -120,7 +121,7 @@ function beregn() {
     Arbeid: ${arbeid} kr<br>
     Avfall totalt: ${avfall} kr<br>
     Kilometer pris totalt: ${kmPris} kr<br>
-    Forbruk/dag: ${forbrukTotal} kr<br><br>
+    Forbruk/dag: ${forbruk} kr<br><br>
 
     <strong>Sum eks. mva:</strong> ${subtotal} kr<br>
     MVA (25%): ${mva} kr<br><br>
@@ -132,28 +133,17 @@ function beregn() {
 function lagPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  const dato = new Date().toLocaleDateString("no-NO");
 
+  const lines = document.getElementById("resultat").innerText.split("\n");
   let y = 20;
 
-  doc.setFontSize(20);
+  doc.setFontSize(18);
   doc.text("TILBUD", 105, y, { align: "center" });
-  y += 8;
-
-  doc.setFontSize(11);
-  doc.text(Dato: ${dato}, 105, y, { align: "center" });
   y += 12;
 
-  doc.line(14, y, 196, y);
-  y += 10;
-
-  doc.setFontSize(11);
-  const lines = document.getElementById("resultat").innerText.split("\n");
   lines.forEach(l => {
     if (!l.trim()) return;
-    const parts = l.split(":");
-    doc.text(parts[0], 14, y);
-    doc.text(parts.slice(1).join(":"), 180, y, { align: "right" });
+    doc.text(l, 14, y);
     y += 6;
   });
 
