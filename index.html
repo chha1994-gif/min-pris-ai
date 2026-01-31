@@ -2,108 +2,139 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MinPris</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f3f3f3;
+      margin: 0;
       padding: 20px;
     }
-    .card {
-      max-width: 500px;
+
+    .container {
+      max-width: 520px;
       margin: auto;
-      background: white;
-      padding: 20px;
+      background: #fff;
+      padding: 25px;
       border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+
+    h1 {
+      text-align: center;
+    }
+
     textarea, input {
       width: 100%;
-      padding: 10px;
-      margin: 8px 0;
+      padding: 12px;
+      margin-top: 10px;
       border-radius: 6px;
       border: 1px solid #ccc;
       font-size: 16px;
     }
+
     textarea {
-      height: 120px;
+      min-height: 120px;
+      resize: vertical;
     }
+
+    .hint {
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
     button {
       width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      background: black;
-      color: white;
-      border: none;
-      border-radius: 6px;
+      padding: 14px;
+      margin-top: 15px;
       font-size: 16px;
+      border-radius: 6px;
+      border: none;
       cursor: pointer;
     }
-    button:hover {
-      opacity: 0.9;
+
+    .btn-main {
+      background: #000;
+      color: white;
     }
-    .link {
-      margin-top: 5px;
-      font-size: 14px;
+
+    .btn-pdf {
+      background: #222;
+      color: white;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f7f7f7;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
 
-<div class="card">
-  <h2>🏠 MinPris</h2>
+<div class="container">
+  <h1>🏠 MinPris</h1>
 
-  <textarea id="tekst" placeholder="Beskriv jobben..."></textarea>
+  <textarea id="tekst" placeholder="Beskriv jobben… f.eks bad: riving 18t, rengjøring 10t"></textarea>
 
-  <input id="timepris" type="number" placeholder="Timepris (kr)">
-  <input id="km" type="number" placeholder="Km per dag">
+  <input type="number" id="timepris" placeholder="Timepris (kr)" />
 
-  <div class="link">
+  <input type="number" id="km" placeholder="Km per dag" />
+
+  <div class="hint">
     Usikker? <a href="https://www.google.com/maps" target="_blank">Sjekk Google Maps</a>
   </div>
 
-  <input id="avfall" type="number" placeholder="Avfall (kr)">
-  <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)">
+  <input type="number" id="avfall" placeholder="Avfall (kr)" />
 
-  <button onclick="beregn()">Beregn</button>
-  <button onclick="lastNedPDF()">Last ned tilbud (PDF)</button>
+  <input type="number" id="forbruk" placeholder="Forbruk per dag (kr)" />
+
+  <button class="btn-main" onclick="beregn()">Beregn</button>
+  <button class="btn-pdf" onclick="lastNedPDF()">Last ned tilbud (PDF)</button>
+
+  <div class="result" id="resultat"></div>
 </div>
 
 <script>
-let resultat = {};
+function beregn() {
+  const tekst = document.getElementById("tekst").value;
+  const timepris = Number(document.getElementById("timepris").value);
+  const km = Number(document.getElementById("km").value);
+  const avfall = Number(document.getElementById("avfall").value);
+  const forbruk = Number(document.getElementById("forbruk").value);
 
-async function beregn() {
-  const data = {
-    tekst: document.getElementById("tekst").value,
-    timepris: Number(document.getElementById("timepris").value),
-    km: Number(document.getElementById("km").value),
-    avfall: Number(document.getElementById("avfall").value),
-    forbruk: Number(document.getElementById("forbruk").value),
-  };
+  // Finn timer i teksten (f.eks "18t")
+  const timer = [...tekst.matchAll(/(\d+)\s*t/gi)]
+    .map(m => Number(m[1]))
+    .reduce((a,b) => a + b, 0);
 
-  const res = await fetch("/api/ai", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  });
+  const dager = Math.ceil(timer / 7.5);
+  const arbeid = timer * timepris;
+  const kjorekost = km * 5 * dager; // 5 kr pr km
+  const forbrukTotalt = forbruk * dager;
 
-  resultat = await res.json();
-  alert(Totalt: ${resultat.total} kr inkl mva);
+  const subtotal = arbeid + kjorekost + forbrukTotalt + avfall;
+  const mva = subtotal * 0.25;
+  const total = subtotal + mva;
+
+  document.getElementById("resultat").innerHTML = `
+    <strong>Resultat:</strong><br><br>
+    ⏱ Timer: ${timer} t<br>
+    📅 Arbeidsdager: ${dager}<br>
+    💼 Arbeid: ${arbeid.toLocaleString()} kr<br>
+    🚗 Kjøring: ${kjorekost.toLocaleString()} kr<br>
+    🧱 Forbruk: ${forbrukTotalt.toLocaleString()} kr<br>
+    🗑 Avfall: ${avfall.toLocaleString()} kr<br><br>
+    💰 Pris eks. mva: ${subtotal.toLocaleString()} kr<br>
+    💰 Pris inkl. mva: <strong>${total.toLocaleString()} kr</strong>
+  `;
 }
 
-async function lastNedPDF() {
-  const res = await fetch("/api/pdf", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(resultat)
-  });
-
-  const blob = await res.blob();
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "tilbud.pdf";
-  a.click();
+function lastNedPDF() {
+  alert("PDF-generering er klar – kobles mot /api/pdf");
 }
 </script>
 
