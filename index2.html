@@ -10,8 +10,8 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
 
-  <link rel="apple-touch-icon" href="icons/192.jpeg">
   <link rel="icon" type="image/jpeg" href="icons/192.jpeg">
+  <link rel="apple-touch-icon" href="icons/192.jpeg">
   <link rel="manifest" href="manifest.json">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -23,7 +23,6 @@
       padding: 20px;
       text-align: center;
     }
-
     .card {
       background: white;
       padding: 20px;
@@ -32,7 +31,6 @@
       margin: auto;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-
     input, textarea {
       width: 100%;
       padding: 12px;
@@ -41,9 +39,7 @@
       border: 1px solid #ccc;
       font-size: 16px;
     }
-
     textarea { min-height: 120px; }
-
     button {
       width: 100%;
       padding: 12px;
@@ -54,7 +50,6 @@
       background: #007bff;
       color: white;
     }
-
     .result {
       margin-top: 15px;
       text-align: left;
@@ -138,31 +133,49 @@ function lagPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  const tekst = document.getElementById("beskrivelse").value;
+  const beskrivelse = document.getElementById("beskrivelse").value;
   const resultat = document.getElementById("resultat").innerText;
+  const dato = new Date().toLocaleDateString("no-NO");
 
   let y = 20;
-  doc.setFontSize(18);
-  doc.text("Min Pris – Tilbud", 14, y);
+
+  doc.setFontSize(20);
+  doc.text("TILBUD", 105, y, { align: "center" });
+  y += 8;
+
+  doc.setFontSize(11);
+  doc.text(Dato: ${dato}, 105, y, { align: "center" });
+  y += 12;
+
+  doc.line(14, y, 196, y);
   y += 10;
 
-  doc.setFontSize(12);
-  doc.text("Arbeidsbeskrivelse:", 14, y);
-  y += 8;
-
-  tekst.split("\n").forEach(l => {
-    doc.text(l, 14, y);
-    y += 6;
-  });
-
+  doc.setFontSize(13);
+  doc.text("Arbeidsbeskrivelse", 14, y);
   y += 6;
-  doc.text("Resultat:", 14, y);
-  y += 8;
 
-  resultat.split("\n").forEach(l => {
-    doc.text(l, 14, y);
+  doc.setFontSize(11);
+  doc.text(doc.splitTextToSize(beskrivelse, 180), 14, y);
+  y += 20;
+
+  doc.setFontSize(13);
+  doc.text("Kostnadsoversikt", 14, y);
+  y += 6;
+
+  doc.setFontSize(11);
+  const rows = resultat.split("\n");
+
+  rows.forEach(row => {
+    if (!row.trim()) return;
+    const parts = row.split(":");
+    doc.text(parts[0], 14, y);
+    doc.text(parts.slice(1).join(":"), 180, y, { align: "right" });
     y += 6;
   });
+
+  doc.setFontSize(9);
+  doc.setTextColor(120);
+  doc.text("Generert med Min Pris", 105, 290, { align: "center" });
 
   doc.save("tilbud.pdf");
 }
