@@ -1,106 +1,36 @@
-<!DOCTYPE html>
-<html lang="no">
-<head>
-  <meta charset="UTF-8" />
-  <title>MinPris</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+import OpenAI from "openai";
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 20px;
-      text-align: center;
-    }
+export default async function handler(req, res) {
+  const { tekst, timepris, km, avfall, forbruk } = req.body;
 
-    .card {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      max-width: 420px;
-      margin: auto;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-
-    textarea, input {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: none;
-      background: #007bff;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
-  </style>
-</head>
-
-<body>
-
-<h2>🏠 MinPris</h2>
-
-<div class="card">
-  <textarea id="tekst" placeholder="Eks: Bad – 4t riving, 3t rengjøring"></textarea>
-
-  <input id="timepris" type="number" placeholder="Timepris (kr)">
-  <input id="km" type="number" placeholder="Km per dag">
-  <input id="avfall" type="number" placeholder="Avfall (kr)">
-  <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)">
-
-  <button type="button" onclick="beregn()">Beregn</button>
-  <button type="button" onclick="lagPDF()">Last ned PDF</button>
-
-  <div id="resultat"></div>
-</div>
-
-<script>
-let resultatData = {};
-
-async function beregn() {
-  const res = await fetch("/api/ai", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      tekst: tekst.value,
-      timepris: Number(timepris.value),
-      km: Number(km.value),
-      avfall: Number(avfall.value),
-      forbruk: Number(forbruk.value)
-    })
+  const ai = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "user",
+        content: `Estimer antall arbeidstimer basert på teksten:
+"${tekst}"
+Svar kun med et tall.`
+      }
+    ]
   });
 
-  const data = await res.json();
-  resultatData = data;
+  const timer = parseInt(ai.choices[0].message.content);
+  const dager = Math.ceil(timer / 7.5);
 
-  document.getElementById("resultat").innerHTML = `
-    <b>Timer:</b> ${data.timer}<br>
-    <b>Totalpris:</b> ${data.total} kr
-  `;
+  const total =
+    timer * timepris +
+    km * 15 * dager +
+    avfall +
+    forbruk * dager;
+
+  res.json({
+    timer,
+    total,
+    tekst: Arbeidet omfatter ${tekst}.
+  });
 }
-
-function lagPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  doc.text("TILBUD", 105, 20, { align: "center" });
-  doc.text(resultatData.tekst, 14, 40);
-  doc.text("Totalpris: " + resultatData.total + " kr", 14, 80);
-
-  doc.save("tilbud.pdf");
-}
-</script>
-
-</body>
-</html>
