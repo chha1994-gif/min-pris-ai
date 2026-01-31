@@ -2,99 +2,92 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
-  <title>Min pris</title>
+  <title>Min Pris</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f6f6f6;
-      padding: 20px;
-      max-width: 600px;
+      background: #f5f5f5;
+      padding: 40px;
+    }
+    .box {
+      background: white;
+      max-width: 500px;
       margin: auto;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-
-    h1 {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
+    h1 { text-align: center; }
     input, textarea, button {
       width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 10px;
     }
-
     button {
-      background: #000;
+      background: black;
       color: white;
-      font-weight: bold;
+      border: none;
       cursor: pointer;
     }
-
-    .hint {
-      font-size: 14px;
-      color: #555;
-      margin-top: -5px;
-    }
-
-    #resultat {
-      margin-top: 20px;
-      font-size: 18px;
-      font-weight: bold;
-    }
+    button:hover { opacity: 0.8; }
+    small { color: #555; }
   </style>
 </head>
 <body>
 
-<h1>🏠 Min pris</h1>
+<div class="box">
+  <h1>🏠 MinPris</h1>
 
-<textarea id="tekst" placeholder="Beskriv jobben..."></textarea>
+  <textarea id="tekst" placeholder="Beskriv jobben..."></textarea>
 
-<input id="timepris" type="number" placeholder="Timepris (kr)" />
+  <input id="timepris" placeholder="Timepris (kr)" type="number">
+  <input id="km" placeholder="Km per dag" type="number">
+  <input id="avfall" placeholder="Avfall (kr)" type="number">
+  <input id="forbruk" placeholder="Forbruk (kr)" type="number">
 
-<input id="kmPerDag" type="number" placeholder="Km per dag" />
+  <small>Usikker? <a href="https://maps.google.com" target="_blank">Sjekk Google Maps</a></small>
 
-<div class="hint">
-  Usikker? <a href="https://maps.google.com" target="_blank">Sjekk Google Maps</a>
+  <button onclick="beregn()">Beregn</button>
+  <button onclick="lagPDF()">Last ned tilbud (PDF)</button>
 </div>
-
-<input id="avfall" type="number" placeholder="Avfall (kr)" />
-<input id="forbruk" type="number" placeholder="Forbruk (kr)" />
-
-<button onclick="beregn()">Beregn</button>
-
-<div id="resultat"></div>
 
 <script>
 async function beregn() {
-  const tekst = document.getElementById("tekst").value;
-  const timepris = Number(document.getElementById("timepris").value);
-  const kmPerDag = Number(document.getElementById("kmPerDag").value);
-  const avfall = Number(document.getElementById("avfall").value);
-  const forbruk = Number(document.getElementById("forbruk").value);
-
   const res = await fetch("/api/ai", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
-      tekst,
-      timepris,
-      km: kmPerDag,
-      avfall,
-      forbruk
+      tekst: tekst.value,
+      timepris: timepris.value,
+      km: km.value,
+      avfall: avfall.value,
+      forbruk: forbruk.value
     })
   });
 
   const data = await res.json();
+  alert("Estimert pris: " + data.total + " kr");
+}
 
-  document.getElementById("resultat").innerHTML = `
-    ⏱ Estimerte timer: ${data.timer}<br>
-    🚗 Km totalt: ${data.dager * kmPerDag}<br>
-    💰 Totalpris: <b>${data.total} kr</b>
-  `;
+async function lagPDF() {
+  const res = await fetch("/api/pdf", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      tekst: tekst.value,
+      timepris: timepris.value,
+      km: km.value,
+      avfall: avfall.value,
+      forbruk: forbruk.value
+    })
+  });
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "tilbud.pdf";
+  a.click();
 }
 </script>
 
