@@ -1,36 +1,50 @@
-import OpenAI from "openai";
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <title>MinPris</title>
+  <style>
+    body { font-family: Arial; background: #f4f4f4; padding: 30px; }
+    .box { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+    input, textarea, button { width: 100%; margin-top: 10px; padding: 10px; }
+    button { background: #2563eb; color: white; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+<div class="box">
+  <h2>MinPris</h2>
 
-export default async function handler(req, res) {
-  const { tekst, timepris, km, avfall, forbruk } = req.body;
+  <textarea id="tekst" placeholder="Beskriv jobben..."></textarea>
+  <input id="timepris" type="number" placeholder="Timepris">
+  <input id="km" type="number" placeholder="Km per dag">
+  <input id="avfall" type="number" placeholder="Avfall (kr)">
+  <input id="forbruk" type="number" placeholder="Forbruk per dag">
 
-  const ai = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "user",
-        content: `Estimer antall arbeidstimer basert på teksten:
-"${tekst}"
-Svar kun med et tall.`
-      }
-    ]
+  <button onclick="beregn()">Beregn</button>
+
+  <pre id="resultat"></pre>
+</div>
+
+<script>
+async function beregn() {
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      tekst: tekst.value,
+      timepris: timepris.value,
+      km: km.value,
+      avfall: avfall.value,
+      forbruk: forbruk.value
+    })
   });
 
-  const timer = parseInt(ai.choices[0].message.content);
-  const dager = Math.ceil(timer / 7.5);
-
-  const total =
-    timer * timepris +
-    km * 15 * dager +
-    avfall +
-    forbruk * dager;
-
-  res.json({
-    timer,
-    total,
-    tekst: Arbeidet omfatter ${tekst}.
-  });
+  const data = await res.json();
+  document.getElementById("resultat").innerText =
+    Timer: ${data.timer}\nTotalpris: ${data.total} kr;
 }
+</script>
+
+</body>
+</html>
