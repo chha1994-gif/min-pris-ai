@@ -63,7 +63,8 @@
 <div class="card">
 
 <textarea id="beskrivelse" placeholder="Eks:
-Bad: 4t riving, 3t rengjøring"></textarea>
+Bad: 4t riving, 3t rengjøring
+Soverom: 8t riving, 7t rengjøring"></textarea>
 
 <input id="timepris" type="number" placeholder="Timepris (kr)">
 <input id="kmPerDag" type="number" placeholder="Km per dag">
@@ -134,16 +135,33 @@ function lagPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  const lines = document.getElementById("resultat").innerText.split("\n");
+  const dato = new Date().toLocaleDateString("no-NO");
+  const linjer = document.getElementById("resultat").innerText.split("\n");
+
   let y = 20;
 
-  doc.setFontSize(18);
+  doc.setFontSize(20);
   doc.text("TILBUD", 105, y, { align: "center" });
+  y += 8;
+
+  doc.setFontSize(11);
+  doc.text(Dato: ${dato}, 105, y, { align: "center" });
   y += 12;
 
-  lines.forEach(l => {
+  doc.line(14, y, 196, y);
+  y += 10;
+
+  doc.setFontSize(12);
+  doc.text("Kostnadsoversikt", 14, y);
+  y += 8;
+
+  doc.setFontSize(11);
+
+  linjer.forEach(l => {
     if (!l.trim()) return;
-    doc.text(l, 14, y);
+    const deler = l.split(":");
+    doc.text(deler[0], 14, y);
+    doc.text(deler.slice(1).join(":"), 180, y, { align: "right" });
     y += 6;
   });
 
