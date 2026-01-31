@@ -1,30 +1,4 @@
-<!DOCTYPE html>
-<html lang="no">
-<head>
-  <meta charset="UTF-8" />
-  <title>MinPris</title>
-  <style>
-    body { font-family: Arial; background: #f4f4f4; padding: 30px; }
-    .box { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
-    input, textarea, button { width: 100%; margin-top: 10px; padding: 10px; }
-    button { background: #2563eb; color: white; border: none; cursor: pointer; }
-  </style>
-</head>
-<body>
-
-<div class="box">
-  <h2>MinPris</h2>
-
-  <textarea id="tekst" placeholder="Beskriv jobben..."></textarea>
-  <input id="timepris" type="number" placeholder="Timepris">
-  <input id="km" type="number" placeholder="Km per dag">
-  <input id="avfall" type="number" placeholder="Avfall (kr)">
-  <input id="forbruk" type="number" placeholder="Forbruk per dag">
-
-  <button onclick="beregn()">Beregn</button>
-
-  <pre id="resultat"></pre>
-</div>
+<button onclick="beregn()">Beregn</button>
 
 <script>
 async function beregn() {
@@ -32,19 +6,15 @@ async function beregn() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      tekst: tekst.value,
-      timepris: timepris.value,
-      km: km.value,
-      avfall: avfall.value,
-      forbruk: forbruk.value
+      tekst: "Bad 4t riving, 3t rengjøring",
+      timepris: 650,
+      km: 50,
+      avfall: 1000,
+      forbruk: 200
     })
   });
 
   const data = await res.json();
-  document.getElementById("resultat").innerText =
-    Timer: ${data.timer}\nTotalpris: ${data.total} kr;
+  alert("Totalpris: " + data.total + " kr");
 }
 </script>
-
-</body>
-</html>
