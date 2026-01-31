@@ -54,19 +54,19 @@
 
 <body>
 
-<h1>🏠 MinPris</h1>
+<h1>🏠 Min Pris</h1>
 
 <div class="card">
 
 <textarea id="beskrivelse" placeholder="Eks:
-Bad: 4t riving, 3t rengjøring
-Soverom: 8t riving, 7t rengjøring"></textarea>
+Bad: 4t riving, 3t rengjøring"></textarea>
 
 <input id="timepris" type="number" placeholder="Timepris (kr)">
 <input id="kmPerDag" type="number" placeholder="Km per dag">
 <input id="avfall" type="number" placeholder="Avfall totalt (kr)">
 <input id="forbrukPerDag" type="number" placeholder="Forbruk per dag (kr)">
 
+<!-- 👇 VIKTIG -->
 <button type="button" onclick="beregn()">Beregn</button>
 <button type="button" onclick="lagPDF()">Last ned PDF</button>
 
@@ -127,51 +127,19 @@ function beregn() {
 function lagPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  const dato = new Date().toLocaleDateString("no-NO");
 
-  const linjer = document.getElementById("resultat").innerText.split("\n");
+  const lines = document.getElementById("resultat").innerText.split("\n");
 
   let y = 20;
-
-  doc.setFontSize(22);
+  doc.setFontSize(18);
   doc.text("TILBUD", 105, y, { align: "center" });
-  y += 6;
-
-  doc.setFontSize(11);
-  doc.text(Dato: ${dato}, 105, y, { align: "center" });
   y += 12;
 
-  doc.line(14, y, 196, y);
-  y += 10;
-
-  doc.setFontSize(12);
-  doc.text("Oppsett", 14, y);
-  y += 8;
-
-  doc.setFontSize(11);
-
-  linjer.forEach(l => {
+  lines.forEach(l => {
     if (!l.trim()) return;
-
-    if (l.toLowerCase().includes("total inkl")) {
-      y += 4;
-      doc.setFontSize(13);
-      doc.setFont(undefined, "bold");
-      doc.text(l, 14, y);
-      doc.setFont(undefined, "normal");
-      y += 8;
-      return;
-    }
-
-    const parts = l.split(":");
-    doc.text(parts[0], 14, y);
-    doc.text(parts.slice(1).join(":"), 190, y, { align: "right" });
+    doc.text(l, 14, y);
     y += 6;
   });
-
-  doc.setFontSize(9);
-  doc.setTextColor(120);
-  doc.text("Generert med Min Pris", 105, 290, { align: "center" });
 
   doc.save("tilbud.pdf");
 }
