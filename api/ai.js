@@ -5,6 +5,10 @@ const openai = new OpenAI({
 });
 
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Only POST allowed" });
+  }
+
   try {
     const { tekst, timepris, km, avfall, forbruk } = req.body;
 
@@ -14,7 +18,10 @@ export default async function handler(req, res) {
 Svar kun med et tall.`,
     });
 
-    const timer = parseInt(response.output[0].content[0].text);
+    const timer = parseInt(
+      response.output[0].content[0].text
+    );
+
     const dager = Math.ceil(timer / 7.5);
 
     const total =
@@ -23,13 +30,10 @@ Svar kun med et tall.`,
       avfall +
       forbruk * dager;
 
-    res.status(200).json({
-      timer,
-      dager,
-      total,
-    });
+    res.status(200).json({ timer, dager, total });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Noe gikk galt" });
+    res.status(500).json({ error: "Serverfeil" });
   }
 }
