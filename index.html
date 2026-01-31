@@ -2,28 +2,67 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
-  <title>Min pris-kalkulator</title>
+  <title>Min pris</title>
   <style>
-    body { font-family: Arial; padding: 20px; max-width: 600px; margin: auto; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f6f6f6;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     input, textarea, button {
       width: 100%;
+      padding: 12px;
       margin: 8px 0;
-      padding: 10px;
       font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
-    button { cursor: pointer; }
-    #resultat { margin-top: 20px; font-weight: bold; }
+
+    button {
+      background: #000;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .hint {
+      font-size: 14px;
+      color: #555;
+      margin-top: -5px;
+    }
+
+    #resultat {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
 
-<h2>Prisberegning</h2>
+<h1>🏠 Min pris</h1>
 
 <textarea id="tekst" placeholder="Beskriv jobben..."></textarea>
-<input id="timepris" type="number" placeholder="Timepris">
-<input id="km" type="number" placeholder="Antall km">
-<input id="avfall" type="number" placeholder="Avfall (kr)">
-<input id="forbruk" type="number" placeholder="Forbruk (kr)">
+
+<input id="timepris" type="number" placeholder="Timepris (kr)" />
+
+<input id="kmPerDag" type="number" placeholder="Km per dag" />
+
+<div class="hint">
+  Usikker? <a href="https://maps.google.com" target="_blank">Sjekk Google Maps</a>
+</div>
+
+<input id="avfall" type="number" placeholder="Avfall (kr)" />
+<input id="forbruk" type="number" placeholder="Forbruk (kr)" />
 
 <button onclick="beregn()">Beregn</button>
 
@@ -31,21 +70,31 @@
 
 <script>
 async function beregn() {
+  const tekst = document.getElementById("tekst").value;
+  const timepris = Number(document.getElementById("timepris").value);
+  const kmPerDag = Number(document.getElementById("kmPerDag").value);
+  const avfall = Number(document.getElementById("avfall").value);
+  const forbruk = Number(document.getElementById("forbruk").value);
+
   const res = await fetch("/api/ai", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      tekst: document.getElementById("tekst").value,
-      timepris: Number(document.getElementById("timepris").value),
-      km: Number(document.getElementById("km").value),
-      avfall: Number(document.getElementById("avfall").value),
-      forbruk: Number(document.getElementById("forbruk").value)
+      tekst,
+      timepris,
+      km: kmPerDag,
+      avfall,
+      forbruk
     })
   });
 
   const data = await res.json();
-  document.getElementById("resultat").innerHTML =
-    ⏱ Timer: ${data.timer}<br>💰 Totalpris: ${data.total} kr;
+
+  document.getElementById("resultat").innerHTML = `
+    ⏱ Estimerte timer: ${data.timer}<br>
+    🚗 Km totalt: ${data.dager * kmPerDag}<br>
+    💰 Totalpris: <b>${data.total} kr</b>
+  `;
 }
 </script>
 
