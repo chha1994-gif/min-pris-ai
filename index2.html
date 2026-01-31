@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Min Pris</title>
 
-  <!-- 🔒 Cache-sikring -->
+  <!-- Cache-sikring -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -42,9 +42,7 @@
       font-size: 16px;
     }
 
-    textarea {
-      min-height: 120px;
-    }
+    textarea { min-height: 120px; }
 
     button {
       width: 100%;
@@ -119,7 +117,7 @@ function beregn() {
   const total = subtotal + mva;
 
   document.getElementById("resultat").innerHTML = `
-    <strong>Spesifikasjon</strong><br>
+    <strong>Oppsett:</strong><br>
     Riving: ${riving} t<br>
     Rengjøring: ${rengjoring} t<br>
     Arbeidstid: ${dager} dager<br><br>
