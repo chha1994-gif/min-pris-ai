@@ -5,10 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Min Pris</title>
 
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-
   <link rel="icon" href="icons/192.jpeg">
   <link rel="apple-touch-icon" href="icons/192.jpeg">
 
@@ -58,29 +54,26 @@
 
 <body>
 
-<h1>🏠 Min Pris</h1>
+<h1>🏠 MinPris</h1>
 
 <div class="card">
 
 <textarea id="beskrivelse" placeholder="Eks:
-Bad: 4t riving, 3t rengjøring
-Soverom: 8t riving, 7t rengjøring"></textarea>
+Bad: 4t riving, 3t rengjøring"></textarea>
 
 <input id="timepris" type="number" placeholder="Timepris (kr)">
 <input id="kmPerDag" type="number" placeholder="Km per dag">
 <input id="avfall" type="number" placeholder="Avfall totalt (kr)">
 <input id="forbrukPerDag" type="number" placeholder="Forbruk per dag (kr)">
 
-<button id="beregnBtn">Beregn</button>
-<button id="pdfBtn">Last ned PDF</button>
+<!-- 👇 VIKTIG -->
+<button type="button" onclick="beregn()">Beregn</button>
+<button type="button" onclick="lagPDF()">Last ned PDF</button>
 
 <div class="result" id="resultat"></div>
 </div>
 
 <script>
-document.getElementById("beregnBtn").addEventListener("click", beregn);
-document.getElementById("pdfBtn").addEventListener("click", lagPDF);
-
 function beregn() {
   const tekst = document.getElementById("beskrivelse").value.toLowerCase();
   const timepris = Number(document.getElementById("timepris").value);
@@ -135,33 +128,16 @@ function lagPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  const dato = new Date().toLocaleDateString("no-NO");
-  const linjer = document.getElementById("resultat").innerText.split("\n");
+  const lines = document.getElementById("resultat").innerText.split("\n");
 
   let y = 20;
-
-  doc.setFontSize(20);
+  doc.setFontSize(18);
   doc.text("TILBUD", 105, y, { align: "center" });
-  y += 8;
-
-  doc.setFontSize(11);
-  doc.text(Dato: ${dato}, 105, y, { align: "center" });
   y += 12;
 
-  doc.line(14, y, 196, y);
-  y += 10;
-
-  doc.setFontSize(12);
-  doc.text("Kostnadsoversikt", 14, y);
-  y += 8;
-
-  doc.setFontSize(11);
-
-  linjer.forEach(l => {
+  lines.forEach(l => {
     if (!l.trim()) return;
-    const deler = l.split(":");
-    doc.text(deler[0], 14, y);
-    doc.text(deler.slice(1).join(":"), 180, y, { align: "right" });
+    doc.text(l, 14, y);
     y += 6;
   });
 
