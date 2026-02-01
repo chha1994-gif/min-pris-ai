@@ -5,97 +5,90 @@
   <title>MinPris</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <link rel="manifest" href="/manifest.json" />
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
+      background: #f3f3f3;
       padding: 20px;
     }
 
-    .container {
+    .box {
       max-width: 600px;
       margin: auto;
       background: white;
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
     input, textarea, button {
       width: 100%;
       padding: 10px;
       margin-top: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
       font-size: 16px;
     }
 
     button {
-      background: #111;
+      background: black;
       color: white;
+      border: none;
       cursor: pointer;
-    }
-
-    button:hover {
-      opacity: 0.9;
     }
 
     .result {
       margin-top: 20px;
-      background: #f0f0f0;
+      background: #eee;
       padding: 10px;
-      border-radius: 5px;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
 
-<div class="container">
+<div class="box">
   <h2>🏠 MinPris</h2>
 
-  <textarea id="tekst" rows="3">Bad: 40t riving, 40t rengjøring</textarea>
+  <textarea id="tekst" placeholder="Beskriv jobben..."></textarea>
 
-  <input id="timepris" type="number" placeholder="Timepris (kr)" />
-  <input id="km" type="number" placeholder="Km per dag" />
+  <input id="timepris" type="number" placeholder="Timepris (kr)">
+  <input id="km" type="number" placeholder="Km per dag">
 
   <small>
     Usikker?
-    <a href="https://www.google.com/maps" target="_blank">Sjekk Google Maps</a>
+    <a href="https://www.google.com/maps" target="_blank">
+      Sjekk Google Maps
+    </a>
   </small>
 
-  <input id="avfall" type="number" placeholder="Avfall (kr)" />
-  <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)" />
+  <input id="avfall" type="number" placeholder="Avfall (kr)">
+  <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)">
 
   <button onclick="beregn()">Beregn</button>
-  <button onclick="genererTilbud()">Generer tilbudstekst (AI)</button>
+  <button onclick="genererTekst()">Generer tilbudstekst (AI)</button>
   <button onclick="lastNedPDF()">Last ned PDF</button>
 
   <div class="result" id="resultat"></div>
 </div>
 
 <script>
-let timer = 0;
-let dager = 0;
-let arbeid = 0;
-let kjoring = 0;
-let forbruk = 0;
-let avfall = 0;
-let total = 0;
+let data = {};
 
 function beregn() {
+  const tekst = document.getElementById("tekst").value;
   const timepris = Number(document.getElementById("timepris").value);
   const km = Number(document.getElementById("km").value);
-  avfall = Number(document.getElementById("avfall").value);
-  forbruk = Number(document.getElementById("forbruk").value);
+  const avfall = Number(document.getElementById("avfall").value);
+  const forbruk = Number(document.getElementById("forbruk").value);
 
-  timer = 80;
-  dager = 8;
-  arbeid = timer * timepris;
-  kjoring = km * 5;
+  const timer = 80;
+  const dager = Math.ceil(timer / 7.5);
+  const arbeid = timer * timepris;
+  const kjoring = km * dager * 5;
+  const total = arbeid + kjoring + avfall + forbruk;
 
-  total = arbeid + kjoring + forbruk + avfall;
+  data = { tekst, timer, dager, arbeid, kjoring, forbruk, avfall, total };
 
   document.getElementById("resultat").innerHTML = `
     <b>Tilbud</b><br>
@@ -105,52 +98,48 @@ function beregn() {
     Kjøring: ${kjoring} kr<br>
     Forbruk: ${forbruk} kr<br>
     Avfall: ${avfall} kr<br><br>
-    <b>Total inkl mva: ${total} kr</b>
+    <b>Total: ${total} kr</b>
   `;
 }
 
-async function genererTilbud() {
+async function genererTekst() {
   const res = await fetch("/api/ai", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      tekst: document.getElementById("tekst").value,
-      timer,
-      dager,
-      arbeid,
-      kjoring,
-      forbruk,
-      avfall,
-      total
-    })
+    body: JSON.stringify(data)
   });
 
-  const data = await res.json();
-  alert(data.text);
+  const result = await res.json();
+  alert(result.text);
 }
 
-async function lastNedPDF() {
-  const res = await fetch("/api/pdf", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      tekst: document.getElementById("tekst").value,
-      timer,
-      dager,
-      arbeid,
-      kjoring,
-      forbruk,
-      avfall,
-      total
-    })
-  });
+function lastNedPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
 
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "tilbud.pdf";
-  a.click();
+  let y = 20;
+  doc.setFontSize(16);
+  doc.text("Tilbud", 20, y);
+
+  doc.setFontSize(12);
+  y += 10;
+  doc.text(Arbeid: ${data.tekst}, 20, y);
+  y += 8;
+  doc.text(Timer: ${data.timer}, 20, y);
+  y += 8;
+  doc.text(Dager: ${data.dager}, 20, y);
+  y += 8;
+  doc.text(Arbeid: ${data.arbeid} kr, 20, y);
+  y += 8;
+  doc.text(Kjøring: ${data.kjoring} kr, 20, y);
+  y += 8;
+  doc.text(Forbruk: ${data.forbruk} kr, 20, y);
+  y += 8;
+  doc.text(Avfall: ${data.avfall} kr, 20, y);
+  y += 10;
+  doc.text(TOTALT: ${data.total} kr, 20, y);
+
+  doc.save("tilbud.pdf");
 }
 </script>
 
