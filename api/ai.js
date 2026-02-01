@@ -1,87 +1,85 @@
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export default async function handler(req, res) {
+  // Tillat kun POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
     const {
-      beskrivelse,
-      timepris,
-      kmPerDag,
-      avfall,
-      materiellTotalt,
-      forbrukHmsPerDag
+      description,
+      totalHours,
+      days,
+      hourRate,
+      laborCost,
+      kmPerDay,
+      drivingCost,
+      waste,
+      material,
+      hmsCost,
+      total
     } = req.body;
 
-    if (!beskrivelse || !timepris) {
-      return res.status(400).json({ error: "Mangler påkrevde felt" });
+    if (!description || !total) {
+      return res.status(400).json({ error: "Mangler data" });
     }
 
-    const systemPrompt = `
-Du er en kalkulasjonsmotor for håndverkstilbud i Norge.
+    const prompt = `
+Skriv en profesjonell, kort og tydelig tilbudstekst på norsk basert på dette:
 
-REGLER (IKKE BRYT):
-- 1 dag = 7.5 timer
-- Du skal tolke antall timer fra beskrivelsen
-- Kilometerpris = 15 kr per km
-- kmPerDag * dager * 15
-- HMS-forbruk = forbrukHmsPerDag * dager
-- Avfall og materiell er faste beløp
+Beskrivelse av jobb:
+${description}
 
-RETURNER KUN GYLDIG JSON MED FELTENE:
-{
-  timer: number,
-  dager: number,
-  arbeid: number,
-  kjoring: number,
-  avfall: number,
-  materiell: number,
-  hms: number,
-  total: number,
-  tilbudstekst: string
-}
+Detaljer:
+- Timer totalt: ${totalHours}
+- Antall dager: ${days}
+- Timepris: ${hourRate} kr
+- Arbeid: ${laborCost} kr
+- Kjøring: ${drivingCost} kr
+- Avfall: ${waste} kr
+- Materiell: ${material} kr
+- HMS: ${hmsCost} kr
+
+Totalpris: ${total} kr
+
+Teksten skal:
+- være klar for å sendes til kunde
+- forklare kort hva som er inkludert
+- avsluttes med totalpris
 `;
 
-    const userPrompt = `
-Beskrivelse: ${beskrivelse}
-Timepris: ${timepris}
-Km per dag: ${kmPerDag}
-Avfall: ${avfall}
-Materiell totalt: ${materiellTotalt}
-HMS forbruk per dag: ${forbrukHmsPerDag}
-`;
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      temperature: 0.2
+    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: Bearer ${process.env.OPENAI_API_KEY}
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "Du er en profesjonell norsk håndverker som skriver tilbud." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.4
+      })
     });
 
-    const text = completion.choices[0].message.content;
+    const data = await openaiRes.json();
 
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      return res.status(500).json({
-        error: "AI returnerte ugyldig JSON",
-        raw: text
-      });
+    if (!openaiRes.ok) {
+      console.error("OpenAI error:", data);
+      return res.status(500).json({ error: "Feil fra OpenAI" });
     }
 
-    return res.status(200).json(data);
+    const text = data.choices?.[0]?.message?.content;
 
-  } catch (error) {
-    console.error("AI ERROR:", error);
-    return res.status(500).json({ error: "Noe gikk galt i AI-endepunktet" });
+    if (!text) {
+      return res.status(500).json({ error: "Tom respons fra AI" });
+    }
+
+    res.status(200).json({ text });
+
+  } catch (err) {
+    console.error("Serverfeil:", err);
+    res.status(500).json({ error: "Intern serverfeil" });
   }
 }
