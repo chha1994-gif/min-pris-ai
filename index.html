@@ -5,7 +5,6 @@
   <title>MinPris</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
@@ -14,7 +13,6 @@
       background: #f3f3f3;
       padding: 20px;
     }
-
     .box {
       max-width: 600px;
       margin: auto;
@@ -22,26 +20,21 @@
       padding: 20px;
       border-radius: 10px;
     }
-
     input, textarea, button {
       width: 100%;
       padding: 10px;
       margin-top: 10px;
-      font-size: 16px;
     }
-
     button {
       background: black;
       color: white;
       border: none;
       cursor: pointer;
     }
-
     .result {
       margin-top: 20px;
       background: #eee;
       padding: 10px;
-      border-radius: 6px;
     }
   </style>
 </head>
@@ -57,17 +50,15 @@
 
   <small>
     Usikker?
-    <a href="https://www.google.com/maps" target="_blank">
-      Sjekk Google Maps
-    </a>
+    <a href="https://www.google.com/maps" target="_blank">Sjekk Google Maps</a>
   </small>
 
   <input id="avfall" type="number" placeholder="Avfall (kr)">
   <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)">
 
-  <button onclick="beregn()">Beregn</button>
-  <button onclick="genererTekst()">Generer tilbudstekst (AI)</button>
-  <button onclick="lastNedPDF()">Last ned PDF</button>
+  <button type="button" onclick="beregn()">Beregn</button>
+  <button type="button" onclick="genererTekst()">Generer tilbudstekst</button>
+  <button type="button" onclick="lastNedPDF()">Last ned PDF</button>
 
   <div class="result" id="resultat"></div>
 </div>
@@ -118,26 +109,13 @@ function lastNedPDF() {
   const doc = new jsPDF();
 
   let y = 20;
-  doc.setFontSize(16);
   doc.text("Tilbud", 20, y);
+  y += 10;
 
-  doc.setFontSize(12);
-  y += 10;
-  doc.text(Arbeid: ${data.tekst}, 20, y);
-  y += 8;
-  doc.text(Timer: ${data.timer}, 20, y);
-  y += 8;
-  doc.text(Dager: ${data.dager}, 20, y);
-  y += 8;
-  doc.text(Arbeid: ${data.arbeid} kr, 20, y);
-  y += 8;
-  doc.text(Kjøring: ${data.kjoring} kr, 20, y);
-  y += 8;
-  doc.text(Forbruk: ${data.forbruk} kr, 20, y);
-  y += 8;
-  doc.text(Avfall: ${data.avfall} kr, 20, y);
-  y += 10;
-  doc.text(TOTALT: ${data.total} kr, 20, y);
+  for (const [k, v] of Object.entries(data)) {
+    doc.text(${k}: ${v}, 20, y);
+    y += 8;
+  }
 
   doc.save("tilbud.pdf");
 }
