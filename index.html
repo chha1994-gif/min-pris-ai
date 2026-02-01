@@ -42,7 +42,7 @@
 
     .hint {
       font-size: 14px;
-      margin-top: 4px;
+      margin-top: 5px;
     }
 
     .result {
@@ -60,13 +60,15 @@
 
   <textarea id="tekst" placeholder="Bad: 40t riving, 40t rengjøring"></textarea>
 
-  <input id="timepris" type="number" placeholder="Timepris (kr)" value="650" />
+  <input id="timepris" type="number" placeholder="Timepris (kr)" />
 
-  <input id="km" type="number" placeholder="Km per dag" value="50" />
-  <div class="hint">Usikker? <a href="https://maps.google.com" target="_blank">Sjekk Google Maps</a></div>
+  <input id="km" type="number" placeholder="Km per dag" />
+  <div class="hint">
+    Usikker? <a href="https://maps.google.com" target="_blank">Sjekk Google Maps</a>
+  </div>
 
-  <input id="avfall" type="number" placeholder="Avfall (kr)" value="10000" />
-  <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)" value="200" />
+  <input id="avfall" type="number" placeholder="Avfall (kr)" />
+  <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)" />
 
   <button onclick="beregn()">Beregn</button>
   <button onclick="genererTekst()">Generer tilbudstekst (AI)</button>
@@ -106,8 +108,6 @@ function beregn() {
     kjøring,
     forbruk: forbrukTot,
     avfall,
-    subtotal,
-    mva,
     total
   };
 
