@@ -2,112 +2,147 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MinPris – tilbudskalkulator</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: system-ui, sans-serif;
       background: #f4f4f4;
-      padding: 30px;
+      padding: 20px;
     }
 
-    .container {
+    .box {
       max-width: 600px;
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
       margin: auto;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
     }
 
     h1 {
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
 
-    textarea, input {
+    input, textarea, button {
       width: 100%;
       padding: 12px;
-      margin-top: 10px;
       margin-bottom: 10px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 15px;
+      font-size: 16px;
+    }
+
+    textarea {
+      resize: vertical;
     }
 
     button {
-      width: 100%;
-      padding: 14px;
-      margin-top: 10px;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
       background: black;
       color: white;
+      border: none;
+      cursor: pointer;
     }
 
     button:hover {
-      opacity: 0.9;
+      opacity: 0.85;
     }
 
-    #resultat {
-      margin-top: 20px;
-      background: #f1f1f1;
-      padding: 15px;
-      border-radius: 6px;
-      white-space: pre-wrap;
-    }
-
-    .link {
-      font-size: 13px;
-      color: #0077cc;
+    .result {
+      margin-top: 15px;
+      padding: 10px;
+      background: #eee;
     }
   </style>
 </head>
-
 <body>
-  <div class="container">
-    <h1>MinPris – tilbudskalkulator</h1>
 
-    <textarea id="beskrivelse" placeholder="Beskriv jobben..."></textarea>
+<div class="box">
+  <h1>MinPris – tilbudskalkulator</h1>
 
-    <input id="timepris" type="number" placeholder="Timepris (kr)">
-    <input id="km" type="number" placeholder="Km per dag">
+  <textarea id="beskrivelse" placeholder="Beskriv jobben..."></textarea>
 
-    <div class="link">Usikker? <a href="https://maps.google.com" target="_blank">Sjekk Google Maps</a></div>
+  <input id="timepris" type="number" placeholder="Timepris (kr)">
+  <input id="km" type="number" placeholder="Km per dag">
+  <small>Usikker? <a href="https://maps.google.com" target="_blank">Sjekk Google Maps</a></small>
 
-    <input id="avfall" type="number" placeholder="Avfall (kr)">
-    <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)">
+  <input id="avfall" type="number" placeholder="Avfall (kr)">
+  <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)">
 
-    <button onclick="generer()">Generer tilbudstekst</button>
-    <button onclick="alert('PDF kommer i neste steg')">Last ned PDF</button>
+  <button onclick="beregn()">Beregn</button>
+  <button onclick="genererTekst()">Generer tilbudstekst</button>
+  <button onclick="lastNedPDF()">Last ned tilbud (PDF)</button>
 
-    <h3>Resultat</h3>
-    <div id="resultat">—</div>
-  </div>
+  <div class="result" id="resultat">–</div>
+</div>
 
 <script>
-async function generer() {
-  const data = {
-    beskrivelse: document.getElementById("beskrivelse").value,
-    timepris: document.getElementById("timepris").value,
-    km: document.getElementById("km").value,
-    avfall: document.getElementById("avfall").value,
-    forbruk: document.getElementById("forbruk").value
+let beregnet = {};
+
+function beregn() {
+  const timepris = Number(document.getElementById("timepris").value);
+  const km = Number(document.getElementById("km").value);
+  const avfall = Number(document.getElementById("avfall").value);
+  const forbruk = Number(document.getElementById("forbruk").value);
+
+  const dager = Math.max(1, Math.ceil(km / 40));
+  const timer = dager * 7.5;
+
+  const arbeid = timer * timepris;
+  const kjøring = km * 5;
+  const total = arbeid + kjøring + avfall + forbruk;
+
+  beregnet = {
+    dager,
+    timer,
+    arbeid,
+    kjøring,
+    avfall,
+    forbruk,
+    total
   };
 
+  document.getElementById("resultat").innerHTML = `
+    <b>Dager:</b> ${dager}<br>
+    <b>Timer:</b> ${timer}<br>
+    <b>Arbeid:</b> ${arbeid} kr<br>
+    <b>Kjøring:</b> ${kjøring} kr<br>
+    <b>Avfall:</b> ${avfall} kr<br>
+    <b>Forbruk:</b> ${forbruk} kr<br><br>
+    <b>Total:</b> ${total} kr
+  `;
+}
+
+async function genererTekst() {
   const res = await fetch("/api/ai", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
+    body: JSON.stringify({
+      beskrivelse: document.getElementById("beskrivelse").value,
+      ...beregnet
+    })
   });
 
-  const json = await res.json();
+  const data = await res.json();
+  document.getElementById("resultat").innerText = data.text || "Noe gikk galt";
+}
 
-  document.getElementById("resultat").innerText =
-    json.text || "Noe gikk galt";
+async function lastNedPDF() {
+  const res = await fetch("/api/pdf", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      beskrivelse: document.getElementById("beskrivelse").value,
+      ...beregnet
+    })
+  });
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "tilbud.pdf";
+  a.click();
 }
 </script>
+
 </body>
 </html>
