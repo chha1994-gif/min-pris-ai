@@ -4,122 +4,151 @@
   <meta charset="UTF-8" />
   <title>MinPris – tilbudskalkulator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
     body {
       font-family: system-ui, sans-serif;
       background: #f5f5f5;
       padding: 20px;
     }
-    .card {
+    .box {
       max-width: 700px;
       margin: auto;
-      background: white;
+      background: #fff;
       padding: 20px;
       border-radius: 8px;
     }
     input, textarea, button {
       width: 100%;
-      margin-top: 10px;
       padding: 10px;
+      margin: 8px 0;
       font-size: 16px;
     }
     button {
-      background: black;
-      color: white;
+      background: #111;
+      color: #fff;
       border: none;
       cursor: pointer;
     }
-    .result {
-      margin-top: 20px;
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+    pre {
       background: #eee;
-      padding: 15px;
-      white-space: pre-line;
+      padding: 10px;
+      white-space: pre-wrap;
     }
   </style>
 </head>
+
 <body>
+  <div class="box">
+    <h1>MinPris – tilbudskalkulator</h1>
 
-<div class="card">
-  <h1>MinPris – tilbudskalkulator</h1>
+    <textarea id="beskrivelse" rows="4" placeholder="Beskriv jobben..."></textarea>
 
-  <textarea id="description" placeholder="Beskriv jobben (f.eks: 40t riving, 40t rengjøring)"></textarea>
-  <input id="rate" type="number" placeholder="Timepris (kr)" />
-  <input id="kmPerDay" type="number" placeholder="Km per dag" />
-  <input id="waste" type="number" placeholder="Avfall totalt (kr)" />
-  <input id="material" type="number" placeholder="Materiell totalt (kr)" />
-  <input id="hmsPerDay" type="number" placeholder="HMS per dag (kr)" />
+    <input id="timepris" type="number" placeholder="Timepris (kr)" />
+    <input id="kmPerDag" type="number" placeholder="Km per dag" />
+    <input id="avfall" type="number" placeholder="Avfall (kr)" />
+    <input id="materiell" type="number" placeholder="Materiell totalt (kr)" />
+    <input id="hms" type="number" placeholder="Forbruk HMS per dag (kr)" />
 
-  <button onclick="calculate()">Beregn</button>
-  <button onclick="generateText()">Generer tilbudstekst</button>
+    <button id="beregnBtn">Beregn</button>
+    <button id="aiBtn" disabled>Generer tilbudstekst</button>
 
-  <div id="result" class="result"></div>
+    <h3>Resultat</h3>
+    <pre id="resultat"></pre>
 
-  <h3>Tilbudstekst</h3>
-  <div id="offerText" class="result"></div>
-  <button onclick="copyText()">Kopier tekst</button>
-</div>
+    <h3>Tilbudstekst</h3>
+    <pre id="tilbud"></pre>
+    <button id="kopierBtn" style="display:none;">Kopier tekst</button>
+  </div>
 
 <script>
-let calculation = null;
+let kalkyle = null;
 
-async function calculate() {
-  const payload = {
-    description: document.getElementById("description").value,
-    rate: Number(document.getElementById("rate").value),
-    kmPerDay: Number(document.getElementById("kmPerDay").value),
-    waste: Number(document.getElementById("waste").value),
-    material: Number(document.getElementById("material").value),
-    hmsPerDay: Number(document.getElementById("hmsPerDay").value)
-  };
+document.getElementById("beregnBtn").onclick = () => {
+  const beskrivelse = document.getElementById("beskrivelse").value;
+  const timepris = Number(document.getElementById("timepris").value);
+  const kmPerDag = Number(document.getElementById("kmPerDag").value);
+  const avfall = Number(document.getElementById("avfall").value || 0);
+  const materiell = Number(document.getElementById("materiell").value || 0);
+  const hms = Number(document.getElementById("hms").value || 0);
 
-  const res = await fetch("/api/ai", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type: "calculate", payload })
-  });
-
-  const data = await res.json();
-  calculation = data;
-
-  document.getElementById("result").innerText =
-`Dager: ${data.days}
-Timer: ${data.hours}
-Arbeid: ${data.laborCost} kr
-Kjøring: ${data.drivingCost} kr
-Avfall: ${data.waste} kr
-Materiell: ${data.material} kr
-HMS: ${data.hmsCost} kr
-
-TOTAL: ${data.total} kr`;
-}
-
-async function generateText() {
-  if (!calculation) {
-    alert("Du må beregne først");
+  if (!beskrivelse || !timepris || !kmPerDag) {
+    alert("Fyll inn beskrivelse, timepris og km per dag");
     return;
   }
 
+  // 🔹 Enkel AI-fri parsing av timer (fallback)
+  const timer =
+    (beskrivelse.match(/(\d+)\s*t/gi) || [])
+      .map(x => Number(x.replace(/\D/g, "")))
+      .reduce((a,b) => a + b, 0);
+
+  const dager = Math.ceil(timer / 7.5);
+  const arbeid = timer * timepris;
+  const kjøring = dager * kmPerDag * 15;
+  const hmsTotal = dager * hms;
+
+  const total =
+    arbeid + kjøring + avfall + materiell + hmsTotal;
+
+  kalkyle = {
+    beskrivelse,
+    timer,
+    dager,
+    arbeid,
+    kjøring,
+    avfall,
+    materiell,
+    hms: hmsTotal,
+    total
+  };
+
+  document.getElementById("resultat").textContent =
+`Dager: ${dager}
+Timer: ${timer}
+Arbeid: ${arbeid} kr
+Kjøring: ${kjøring} kr
+Avfall: ${avfall} kr
+Materiell: ${materiell} kr
+HMS: ${hmsTotal} kr
+
+TOTAL: ${total} kr`;
+
+  document.getElementById("aiBtn").disabled = false;
+};
+
+document.getElementById("aiBtn").onclick = async () => {
+  document.getElementById("tilbud").textContent = "Genererer tekst...";
+  document.getElementById("kopierBtn").style.display = "none";
+
   const res = await fetch("/api/ai", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type: "offer", payload: calculation })
+    body: JSON.stringify(kalkyle)
   });
 
-  const text = await res.text();
+  const data = await res.json();
 
-  try {
-    const data = JSON.parse(text);
-    document.getElementById("offerText").innerText = data.text;
-  } catch {
-    document.getElementById("offerText").innerText = text;
+  if (!data.text) {
+    document.getElementById("tilbud").textContent =
+      "Noe gikk galt med AI-generering.";
+    return;
   }
-}
 
-function copyText() {
-  navigator.clipboard.writeText(document.getElementById("offerText").innerText);
-  alert("Kopiert!");
-}
+  document.getElementById("tilbud").textContent = data.text;
+  document.getElementById("kopierBtn").style.display = "block";
+};
+
+document.getElementById("kopierBtn").onclick = () => {
+  navigator.clipboard.writeText(
+    document.getElementById("tilbud").textContent
+  );
+  alert("Tekst kopiert");
+};
 </script>
-
 </body>
 </html>
