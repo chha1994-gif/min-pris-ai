@@ -1,11 +1,9 @@
-01:37
-Du har sendt
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { tekst, timer, total } = req.body;
+  const { tekst, total } = req.body;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -19,18 +17,17 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: "Du er en profesjonell håndverker som skriver tilbud til kunde."
+            content: "Du er en profesjonell håndverker som skriver tilbud."
           },
           {
             role: "user",
             content: `
-Lag et ryddig og profesjonelt tilbud basert på dette:
+Lag et profesjonelt tilbud basert på dette:
 
 Arbeid: ${tekst}
-Estimert tid: ${timer} timer
-Totalpris: ${total} kr inkl mva
+Totalpris: ${total} kr
 
-Skriv på norsk, kort og seriøst.
+Skriv kort, ryddig og profesjonelt.
 `
           }
         ]
