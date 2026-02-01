@@ -6,30 +6,30 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { description, price } = req.body;
-
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: process.env.OPENAI_API_KEY
     });
+
+    const { beskrivelse, timer, dager, arbeid, kjøring, avfall, forbruk, total } = req.body;
+
+    const prompt = `
+Lag et profesjonelt tilbud basert på:
+
+Arbeid: ${beskrivelse}
+Timer: ${timer}
+Dager: ${dager}
+Arbeid: ${arbeid} kr
+Kjøring: ${kjøring} kr
+Avfall: ${avfall} kr
+Forbruk: ${forbruk} kr
+Totalpris: ${total} kr
+`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        {
-          role: "system",
-          content: "Du skriver profesjonelle tilbud til kunder i Norge."
-        },
-        {
-          role: "user",
-          content: `
-Lag et kort og profesjonelt tilbud basert på dette:
-
-Arbeid: ${description}
-Totalpris: ${price} kr
-
-Svar på norsk.
-`
-        }
+        { role: "system", content: "Du skriver profesjonelle håndverkertilbud på norsk." },
+        { role: "user", content: prompt }
       ]
     });
 
