@@ -8,35 +8,47 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f2f2f2;
+      background: #f3f3f3;
       padding: 20px;
     }
+
     .container {
-      max-width: 500px;
+      max-width: 600px;
       margin: auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+
     input, textarea, button {
       width: 100%;
       padding: 12px;
       margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
       font-size: 16px;
     }
+
+    textarea {
+      min-height: 80px;
+    }
+
     button {
       background: black;
       color: white;
-      border: none;
       cursor: pointer;
     }
-    button:hover {
-      opacity: 0.85;
+
+    .hint {
+      font-size: 14px;
+      margin-top: 4px;
     }
+
     .result {
       margin-top: 20px;
-      background: #eee;
       padding: 15px;
+      background: #f7f7f7;
       border-radius: 6px;
     }
   </style>
@@ -48,23 +60,24 @@
 
   <textarea id="tekst" placeholder="Bad: 40t riving, 40t rengjøring"></textarea>
 
-  <input id="timepris" type="number" placeholder="Timepris (kr)" />
-  <input id="km" type="number" placeholder="Km per dag" />
+  <input id="timepris" type="number" placeholder="Timepris (kr)" value="650" />
 
-  <div style="font-size:14px;margin-bottom:5px;">
-    Usikker? <a href="https://www.google.com/maps" target="_blank">Sjekk Google Maps</a>
-  </div>
+  <input id="km" type="number" placeholder="Km per dag" value="50" />
+  <div class="hint">Usikker? <a href="https://maps.google.com" target="_blank">Sjekk Google Maps</a></div>
 
-  <input id="avfall" type="number" placeholder="Avfall (kr)" />
-  <input id="forbruk" type="number" placeholder="Forbruk pr dag (kr)" />
+  <input id="avfall" type="number" placeholder="Avfall (kr)" value="10000" />
+  <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)" value="200" />
 
   <button onclick="beregn()">Beregn</button>
   <button onclick="genererTekst()">Generer tilbudstekst (AI)</button>
+  <button onclick="lastNedPDF()">Last ned PDF</button>
 
   <div id="resultat" class="result"></div>
 </div>
 
 <script>
+let kalkyle = {};
+
 function beregn() {
   const tekst = document.getElementById("tekst").value;
   const timepris = Number(document.getElementById("timepris").value);
@@ -77,20 +90,33 @@ function beregn() {
     .reduce((a,b) => a + b, 0);
 
   const dager = Math.ceil(timer / 7.5);
+  const kjøring = km * dager * 5;
   const arbeid = timer * timepris;
-  const kjorekost = km * dager * 5;
   const forbrukTot = forbruk * dager;
 
-  const subtotal = arbeid + kjorekost + forbrukTot + avfall;
+  const subtotal = arbeid + kjøring + forbrukTot + avfall;
   const mva = Math.round(subtotal * 0.25);
   const total = subtotal + mva;
+
+  kalkyle = {
+    tekst,
+    timer,
+    dager,
+    arbeid,
+    kjøring,
+    forbruk: forbrukTot,
+    avfall,
+    subtotal,
+    mva,
+    total
+  };
 
   document.getElementById("resultat").innerHTML = `
     <strong>Tilbud</strong><br><br>
     Timer: ${timer}<br>
     Dager: ${dager}<br>
     Arbeid: ${arbeid.toLocaleString()} kr<br>
-    Kjøring: ${kjorekost.toLocaleString()} kr<br>
+    Kjøring: ${kjøring.toLocaleString()} kr<br>
     Forbruk: ${forbrukTot.toLocaleString()} kr<br>
     Avfall: ${avfall.toLocaleString()} kr<br><br>
     <strong>Total inkl mva: ${total.toLocaleString()} kr</strong>
@@ -98,31 +124,37 @@ function beregn() {
 }
 
 async function genererTekst() {
-  const tekst = document.getElementById("tekst").value;
-  const resultat = document.getElementById("resultat").innerText;
-
-  if (!tekst || !resultat) {
-    alert("Du må beregne først.");
-    return;
-  }
-
   try {
     const res = await fetch("/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tekst, resultat })
+      body: JSON.stringify(kalkyle)
     });
 
     const data = await res.json();
-
-    document.getElementById("resultat").innerHTML += `
-      <hr>
-      <strong>Tilbudstekst:</strong><br>
-      ${data.tekst.replace(/\n/g, "<br>")}
-    `;
-  } catch (err) {
+    alert(data.tekst);
+  } catch {
     alert("Kunne ikke generere tilbudstekst");
-    console.error(err);
+  }
+}
+
+async function lastNedPDF() {
+  try {
+    const res = await fetch("/api/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(kalkyle)
+    });
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tilbud.pdf";
+    a.click();
+  } catch {
+    alert("Kunne ikke generere PDF");
   }
 }
 </script>
