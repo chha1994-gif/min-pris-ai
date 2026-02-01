@@ -16,8 +16,8 @@ export default async function handler(req, res) {
   doc.fontSize(20).text("Tilbud", { underline: true });
   doc.moveDown();
 
-  Object.entries(data).forEach(([key, value]) => {
-    doc.fontSize(12).text(${key}: ${value});
+  Object.entries(data).forEach(([k, v]) => {
+    doc.fontSize(12).text(${k}: ${v});
   });
 
   doc.end();
