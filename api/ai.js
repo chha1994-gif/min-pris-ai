@@ -1,42 +1,40 @@
 import OpenAI from "openai";
 
-export const config = {
-  runtime: "nodejs"
-};
-
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export default async function handler(req, res) {
   try {
-    const d = req.body;
+    const data = req.body;
+
+    const prompt = `
+Lag en profesjonell tilbudstekst basert på dette:
+
+Arbeid: ${data.tekst}
+Timer: ${data.timer}
+Dager: ${data.dager}
+Arbeid: ${data.arbeid} kr
+Kjøring: ${data.kjoring} kr
+Forbruk: ${data.forbruk} kr
+Avfall: ${data.avfall} kr
+Totalpris: ${data.total} kr
+
+Skriv kort, profesjonelt og klart.
+`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: `
-Lag en profesjonell tilbudstekst:
-
-Arbeid: ${d.tekst}
-Timer: ${d.timer}
-Dager: ${d.dager}
-Arbeid: ${d.arbeid} kr
-Kjøring: ${d.kjoring} kr
-Forbruk: ${d.forbruk} kr
-Avfall: ${d.avfall} kr
-Total: ${d.total} kr
-`
-        }
-      ]
+      messages: [{ role: "user", content: prompt }],
     });
 
     res.status(200).json({
-      text: completion.choices[0].message.content
+      text: completion.choices[0].message.content,
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "AI-feil" });
   }
 }
+Sendt
+Skriv til
