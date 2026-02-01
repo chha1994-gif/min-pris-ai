@@ -1,27 +1,50 @@
+01:37
+Du har sendt
 export default async function handler(req, res) {
-  const { tekst, timepris, km, avfall, forbruk } = req.body;
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
-  // Estimat basert på tekst
-  let timer = tekst.toLowerCase().includes("riving") ? 40 : 20;
-  let dager = Math.ceil(timer / 7.5);
+  const { tekst, timer, total } = req.body;
 
-  const kjorekost = km * dager * 4;
-  const forbrukTotal = forbruk * dager;
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": Bearer ${process.env.OPENAI_API_KEY},
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "Du er en profesjonell håndverker som skriver tilbud til kunde."
+          },
+          {
+            role: "user",
+            content: `
+Lag et ryddig og profesjonelt tilbud basert på dette:
 
-  const prisEks =
-    timer * timepris +
-    kjorekost +
-    avfall +
-    forbrukTotal;
+Arbeid: ${tekst}
+Estimert tid: ${timer} timer
+Totalpris: ${total} kr inkl mva
 
-  const mva = Math.round(prisEks * 0.25);
-  const total = prisEks + mva;
+Skriv på norsk, kort og seriøst.
+`
+          }
+        ]
+      })
+    });
 
-  res.json({
-    timer,
-    dager,
-    prisEks,
-    mva,
-    total
-  });
+    const data = await response.json();
+
+    res.json({
+      tekst: data.choices[0].message.content
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "OpenAI-feil" });
+  }
 }
