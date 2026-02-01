@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export default async function handler(req, res) {
@@ -10,42 +10,62 @@ export default async function handler(req, res) {
   }
 
   try {
-    const data = req.body;
+    const {
+      beskrivelse,
+      timer,
+      dager,
+      arbeid,
+      kjøring,
+      avfall,
+      materiell,
+      hms,
+      total
+    } = req.body;
+
+    if (!beskrivelse || !total) {
+      return res.status(400).json({ error: "Manglende data" });
+    }
 
     const prompt = `
 Skriv en profesjonell tilbudstekst på norsk basert på dette:
 
-Jobb: ${data.beskrivelse}
+Jobbbeskrivelse:
+${beskrivelse}
 
-Dager: ${data.dager}
-Timer: ${data.timer}
+Kalkyle:
+- Timer: ${timer}
+- Dager: ${dager}
+- Arbeid: ${arbeid} kr
+- Kjøring: ${kjøring} kr
+- Avfall: ${avfall} kr
+- Materiell: ${materiell} kr
+- HMS: ${hms} kr
+- Totalpris: ${total} kr
 
-Kostnader:
-- Arbeid: ${data.arbeid} kr
-- Kjøring: ${data.kjøring} kr
-- Avfall: ${data.avfall} kr
-- Materiell: ${data.materiell} kr
-- HMS: ${data.hms} kr
-
-Totalpris: ${data.total} kr
-
-Teksten skal være klar til å sende kunde.
+Krav:
+- Kort og ryddig
+- Klar totalpris
+- Passer for håndverk/bygg
 `;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.4
+      messages: [
+        { role: "system", content: "Du skriver tilbudstekster for håndverksbedrifter." },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.3
     });
 
-    res.status(200).json({
-      text: completion.choices[0].message.content
-    });
+    const text = completion.choices[0].message.content;
 
-  } catch (err) {
-    res.status(500).json({
+    return res.status(200).json({ text });
+
+  } catch (error) {
+    console.error("AI error:", error);
+    return res.status(500).json({
       error: "AI-feil",
-      details: err.message
+      message: error.message
     });
   }
 }
