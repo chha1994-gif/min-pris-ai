@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   doc.moveDown();
 
   Object.entries(data).forEach(([key, value]) => {
-    doc.text(${key}: ${value});
+    doc.fontSize(12).text(${key}: ${value});
   });
 
   doc.end();
