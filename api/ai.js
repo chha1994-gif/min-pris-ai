@@ -1,48 +1,148 @@
-import OpenAI from "openai";
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <title>MinPris – tilbudskalkulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+    .box {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+    }
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+    h1 {
+      margin-bottom: 15px;
+    }
 
-  try {
-    const { beskrivelse, timepris, km, avfall, forbruk } = req.body;
+    input, textarea, button {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
 
-    const prompt = `
-Du er en profesjonell håndverker.
-Regn ut tilbud basert på:
+    textarea {
+      resize: vertical;
+    }
 
-Beskrivelse: ${beskrivelse}
-Timepris: ${timepris} kr
-Km per dag: ${km}
-Avfall: ${avfall} kr
-Forbruk per dag: ${forbruk} kr
+    button {
+      background: black;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
 
-Regn ut:
-- Antall dager
-- Antall timer
-- Arbeid
-- Kjøring
-- Forbruk
-- Totalpris
+    button:hover {
+      opacity: 0.85;
+    }
 
-Svar tydelig med tall.
-`;
+    .result {
+      margin-top: 15px;
+      padding: 10px;
+      background: #eee;
+    }
+  </style>
+</head>
+<body>
 
-    const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }]
-    });
+<div class="box">
+  <h1>MinPris – tilbudskalkulator</h1>
 
-    res.status(200).json({
-      text: completion.choices[0].message.content
-    });
+  <textarea id="beskrivelse" placeholder="Beskriv jobben..."></textarea>
 
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  <input id="timepris" type="number" placeholder="Timepris (kr)">
+  <input id="km" type="number" placeholder="Km per dag">
+  <small>Usikker? <a href="https://maps.google.com" target="_blank">Sjekk Google Maps</a></small>
+
+  <input id="avfall" type="number" placeholder="Avfall (kr)">
+  <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)">
+
+  <button onclick="beregn()">Beregn</button>
+  <button onclick="genererTekst()">Generer tilbudstekst</button>
+  <button onclick="lastNedPDF()">Last ned tilbud (PDF)</button>
+
+  <div class="result" id="resultat">–</div>
+</div>
+
+<script>
+let beregnet = {};
+
+function beregn() {
+  const timepris = Number(document.getElementById("timepris").value);
+  const km = Number(document.getElementById("km").value);
+  const avfall = Number(document.getElementById("avfall").value);
+  const forbruk = Number(document.getElementById("forbruk").value);
+
+  const dager = Math.max(1, Math.ceil(km / 40));
+  const timer = dager * 7.5;
+
+  const arbeid = timer * timepris;
+  const kjøring = km * 5;
+  const total = arbeid + kjøring + avfall + forbruk;
+
+  beregnet = {
+    dager,
+    timer,
+    arbeid,
+    kjøring,
+    avfall,
+    forbruk,
+    total
+  };
+
+  document.getElementById("resultat").innerHTML = `
+    <b>Dager:</b> ${dager}<br>
+    <b>Timer:</b> ${timer}<br>
+    <b>Arbeid:</b> ${arbeid} kr<br>
+    <b>Kjøring:</b> ${kjøring} kr<br>
+    <b>Avfall:</b> ${avfall} kr<br>
+    <b>Forbruk:</b> ${forbruk} kr<br><br>
+    <b>Total:</b> ${total} kr
+  `;
 }
+
+async function genererTekst() {
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      beskrivelse: document.getElementById("beskrivelse").value,
+      ...beregnet
+    })
+  });
+
+  const data = await res.json();
+  document.getElementById("resultat").innerText = data.text || "Noe gikk galt";
+}
+
+async function lastNedPDF() {
+  const res = await fetch("/api/pdf", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      beskrivelse: document.getElementById("beskrivelse").value,
+      ...beregnet
+    })
+  });
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "tilbud.pdf";
+  a.click();
+}
+</script>
+
+</body>
+</html>
