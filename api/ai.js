@@ -1,13 +1,12 @@
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
       return res.status(405).json({ error: "Method not allowed" });
+    }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "OPENAI_API_KEY mangler" });
     }
 
     const {
@@ -22,48 +21,52 @@ export default async function handler(req, res) {
       total
     } = req.body;
 
-    if (!beskrivelse || !total) {
-      return res.status(400).json({ error: "Manglende data" });
-    }
-
     const prompt = `
-Lag en profesjonell tilbudstekst på norsk basert på dette:
+Lag en profesjonell tilbudstekst på norsk.
 
-Jobbbeskrivelse:
+Jobb:
 ${beskrivelse}
 
 Detaljer:
-- Timer: ${timer}
-- Dager: ${dager}
-- Arbeid: ${arbeid} kr
-- Kjøring: ${kjøring} kr
-- Avfall: ${avfall} kr
-- Materiell: ${materiell} kr
-- HMS: ${hms} kr
+Timer: ${timer}
+Dager: ${dager}
+Arbeid: ${arbeid} kr
+Kjøring: ${kjøring} kr
+Avfall: ${avfall} kr
+Materiell: ${materiell} kr
+HMS: ${hms} kr
 
 Totalpris: ${total} kr
-
-Teksten skal være klar til å sendes til kunde.
 `;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "Du er en profesjonell håndverker som skriver tilbud." },
-        { role: "user", content: prompt }
-      ],
-      temperature: 0.3
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": Bearer ${apiKey}
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "Du er en profesjonell håndverker som skriver tilbud." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.3
+      })
     });
 
-    const text = completion.choices[0].message.content;
+    const data = await response.json();
 
-    return res.status(200).json({ text });
+    if (!data.choices?.[0]?.message?.content) {
+      return res.status(500).json({ error: "Ugyldig svar fra OpenAI", data });
+    }
+
+    return res.status(200).json({
+      text: data.choices[0].message.content
+    });
 
   } catch (err) {
     console.error("AI ERROR:", err);
-    return res.status(500).json({
-      error: "AI-feil",
-      details: err.message
-    });
+    return res.status(500).json({ error: err.message });
   }
 }
