@@ -1,101 +1,113 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MinPris – tilbudskalkulator</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f4f4f4;
-      padding: 20px;
+      padding: 30px;
     }
 
-    .box {
+    .container {
       max-width: 600px;
-      margin: auto;
       background: white;
-      padding: 20px;
-      border-radius: 8px;
+      padding: 25px;
+      border-radius: 10px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
-    input, textarea, button {
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    textarea, input {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       margin-top: 10px;
-      font-size: 16px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 15px;
     }
 
     button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
       background: black;
       color: white;
-      border: none;
-      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.9;
     }
 
     #resultat {
       margin-top: 20px;
-      padding: 10px;
-      background: #eee;
+      background: #f1f1f1;
+      padding: 15px;
+      border-radius: 6px;
       white-space: pre-wrap;
+    }
+
+    .link {
+      font-size: 13px;
+      color: #0077cc;
     }
   </style>
 </head>
+
 <body>
+  <div class="container">
+    <h1>MinPris – tilbudskalkulator</h1>
 
-<div class="box">
-  <h1>MinPris – tilbudskalkulator</h1>
+    <textarea id="beskrivelse" placeholder="Beskriv jobben..."></textarea>
 
-  <textarea id="beskrivelse" placeholder="Beskriv jobben (f.eks: 2 dager og 5 timer arbeid)"></textarea>
+    <input id="timepris" type="number" placeholder="Timepris (kr)">
+    <input id="km" type="number" placeholder="Km per dag">
 
-  <input id="timepris" type="number" placeholder="Timepris (kr)">
-  <input id="km" type="number" placeholder="Km per dag">
-  <input id="kmpris" type="number" placeholder="Pris per km (kr)">
+    <div class="link">Usikker? <a href="https://maps.google.com" target="_blank">Sjekk Google Maps</a></div>
 
-  <button onclick="beregn()">Beregn tilbud</button>
+    <input id="avfall" type="number" placeholder="Avfall (kr)">
+    <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)">
 
-  <div id="resultat"></div>
-</div>
+    <button onclick="generer()">Generer tilbudstekst</button>
+    <button onclick="alert('PDF kommer i neste steg')">Last ned PDF</button>
+
+    <h3>Resultat</h3>
+    <div id="resultat">—</div>
+  </div>
 
 <script>
-function beregn() {
-  const tekst = document.getElementById("beskrivelse").value.toLowerCase();
-  const timepris = Number(document.getElementById("timepris").value);
-  const km = Number(document.getElementById("km").value);
-  const kmpris = Number(document.getElementById("kmpris").value);
+async function generer() {
+  const data = {
+    beskrivelse: document.getElementById("beskrivelse").value,
+    timepris: document.getElementById("timepris").value,
+    km: document.getElementById("km").value,
+    avfall: document.getElementById("avfall").value,
+    forbruk: document.getElementById("forbruk").value
+  };
 
-  let dager = 0;
-  let timer = 0;
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
 
-  const dagMatch = tekst.match(/(\d+)\s*dager?/);
-  const timeMatch = tekst.match(/(\d+)\s*timer?/);
+  const json = await res.json();
 
-  if (dagMatch) dager = parseInt(dagMatch[1]);
-  if (timeMatch) timer = parseInt(timeMatch[1]);
-
-  const arbeid = (dager * 8 * timepris) + (timer * timepris);
-  const kjøring = dager * km * kmpris;
-  const total = arbeid + kjøring;
-
-  document.getElementById("resultat").innerHTML = `
-📄 TILBUD
-
-Arbeid:
-- Dager: ${dager}
-- Timer: ${timer}
-- Timepris: ${timepris} kr
-
-Kjøring:
-- ${km} km / dag
-- ${kmpris} kr per km
-
-──────────────
-Arbeid: ${arbeid} kr
-Kjøring: ${kjøring} kr
-
-✅ TOTALPRIS: ${total} kr
-`;
+  document.getElementById("resultat").innerText =
+    json.text || "Noe gikk galt";
 }
 </script>
-
 </body>
 </html>
