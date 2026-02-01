@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+export const config = {
+  maxDuration: 30,
+};
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -10,6 +10,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    const apiKey = process.env.OPENAI_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({ error: "OPENAI_API_KEY mangler" });
+    }
+
+    const client = new OpenAI({ apiKey });
+
     const {
       beskrivelse,
       timer,
@@ -19,53 +27,50 @@ export default async function handler(req, res) {
       avfall,
       materiell,
       hms,
-      total
+      total,
     } = req.body;
 
     if (!beskrivelse || !total) {
-      return res.status(400).json({ error: "Manglende data" });
+      return res.status(400).json({ error: "Ugyldig input" });
     }
 
     const prompt = `
-Skriv en profesjonell tilbudstekst på norsk basert på dette:
+Lag en profesjonell tilbudstekst på norsk.
 
-Jobbbeskrivelse:
+Arbeid:
 ${beskrivelse}
 
 Kalkyle:
-- Timer: ${timer}
-- Dager: ${dager}
-- Arbeid: ${arbeid} kr
-- Kjøring: ${kjøring} kr
-- Avfall: ${avfall} kr
-- Materiell: ${materiell} kr
-- HMS: ${hms} kr
-- Totalpris: ${total} kr
+Timer: ${timer}
+Dager: ${dager}
+Arbeid: ${arbeid} kr
+Kjøring: ${kjøring} kr
+Avfall: ${avfall} kr
+Materiell: ${materiell} kr
+HMS: ${hms} kr
+Totalpris: ${total} kr
 
-Krav:
-- Kort og ryddig
-- Klar totalpris
-- Passer for håndverk/bygg
+Teksten skal være klar til å sendes til kunde.
 `;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "Du skriver tilbudstekster for håndverksbedrifter." },
-        { role: "user", content: prompt }
-      ],
-      temperature: 0.3
+    const response = await client.responses.create({
+      model: "gpt-4.1-mini",
+      input: prompt,
     });
 
-    const text = completion.choices[0].message.content;
+    const text = response.output_text;
+
+    if (!text) {
+      return res.status(500).json({ error: "Tom AI-respons" });
+    }
 
     return res.status(200).json({ text });
 
-  } catch (error) {
-    console.error("AI error:", error);
+  } catch (err) {
+    console.error("AI FUNCTION CRASH:", err);
     return res.status(500).json({
-      error: "AI-feil",
-      message: error.message
+      error: "Serverfeil i AI-funksjon",
+      message: err.message,
     });
   }
 }
