@@ -2,52 +2,36 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MinPris</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f2f2f2;
+      background: #f4f4f4;
       padding: 20px;
     }
-
     .box {
       max-width: 600px;
       margin: auto;
-      background: #fff;
+      background: white;
       padding: 20px;
-      border-radius: 10px;
+      border-radius: 8px;
     }
-
-    input, textarea {
+    input, textarea, button {
       width: 100%;
       padding: 10px;
-      margin-top: 10px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      margin: 8px 0;
     }
-
     button {
-      width: 100%;
-      margin-top: 15px;
-      padding: 12px;
-      font-size: 16px;
       background: black;
       color: white;
       border: none;
-      border-radius: 6px;
       cursor: pointer;
     }
-
     .result {
       margin-top: 20px;
       background: #eee;
-      padding: 15px;
-      border-radius: 8px;
-    }
-
-    a {
-      font-size: 14px;
+      padding: 10px;
     }
   </style>
 </head>
@@ -56,11 +40,17 @@
 <div class="box">
   <h2>🏠 MinPris</h2>
 
-  <textarea id="tekst" placeholder="Bad: 40t riving, 40t rengjøring"></textarea>
+  <textarea id="tekst" placeholder="Beskrivelse (f.eks: Bad, riving, rengjøring)"></textarea>
 
   <input id="timepris" type="number" placeholder="Timepris (kr)">
   <input id="km" type="number" placeholder="Km per dag">
-  <a href="https://maps.google.com" target="_blank">Usikker? Sjekk Google Maps</a>
+
+  <small>
+    Usikker?
+    <a href="https://www.google.com/maps" target="_blank">
+      Sjekk Google Maps
+    </a>
+  </small>
 
   <input id="avfall" type="number" placeholder="Avfall (kr)">
   <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)">
@@ -76,21 +66,20 @@
 let timer, dager, arbeid, kjoring, forbruk, avfall, total;
 
 function beregn() {
-  const tekst = document.getElementById("tekst").value.toLowerCase();
+  const tekst = document.getElementById("tekst").value;
   const timepris = Number(document.getElementById("timepris").value);
   const km = Number(document.getElementById("km").value);
   avfall = Number(document.getElementById("avfall").value);
   forbruk = Number(document.getElementById("forbruk").value);
 
-  timer = tekst.includes("40t") ? 80 : 40;
+  timer = tekst.toLowerCase().includes("riving") ? 60 : 40;
   dager = Math.ceil(timer / 7.5);
 
   arbeid = timer * timepris;
-  kjoring = km * dager * 5;
-  forbruk = forbruk * dager;
+  kjoring = km * dager * 4;
 
-  const mva = Math.round((arbeid + kjoring + forbruk + avfall) * 0.25);
-  total = arbeid + kjoring + forbruk + avfall + mva;
+  total = arbeid + kjoring + forbruk + avfall;
+  const mva = Math.round(total * 0.25);
 
   document.getElementById("resultat").innerHTML = `
     <b>Tilbud</b><br>
@@ -100,16 +89,22 @@ function beregn() {
     Kjøring: ${kjoring} kr<br>
     Forbruk: ${forbruk} kr<br>
     Avfall: ${avfall} kr<br><br>
-    <b>Total inkl mva: ${total} kr</b>
+    <b>Total inkl mva: ${total + mva} kr</b>
   `;
 }
 
 function genererTekst() {
   fetch("/api/ai", {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      tekst: document.getElementById("tekst").value,
+      tekst,
+      timer,
+      dager,
+      arbeid,
+      kjoring,
+      forbruk,
+      avfall,
       total
     })
   })
@@ -121,9 +116,9 @@ function genererTekst() {
 function lastNedPDF() {
   fetch("/api/pdf", {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      tekst: document.getElementById("tekst").value,
+      tekst,
       timer,
       dager,
       arbeid,
