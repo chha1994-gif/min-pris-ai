@@ -1,47 +1,40 @@
+17:06
+Du har sendt
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const { tekst, total } = req.body;
-
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": Bearer ${process.env.OPENAI_API_KEY},
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: "Du er en profesjonell håndverker som skriver tilbud."
-          },
-          {
-            role: "user",
-            content: `
-Lag et profesjonelt tilbud basert på dette:
+    const data = req.body;
 
-Arbeid: ${tekst}
-Totalpris: ${total} kr
+    const prompt = `
+Lag en profesjonell tilbudstekst basert på dette:
 
-Skriv kort, ryddig og profesjonelt.
-`
-          }
-        ]
-      })
+Arbeid: ${data.tekst}
+Timer: ${data.timer}
+Dager: ${data.dager}
+Arbeid: ${data.arbeid} kr
+Kjøring: ${data.kjøring} kr
+Forbruk: ${data.forbruk} kr
+Avfall: ${data.avfall} kr
+Totalpris: ${data.total} kr
+
+Skriv høflig, profesjonelt og klart.
+`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
     });
 
-    const data = await response.json();
-
-    res.json({
-      tekst: data.choices[0].message.content
+    res.status(200).json({
+      tekst: completion.choices[0].message.content,
     });
-
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "OpenAI-feil" });
+    res.status(500).json({ error: "AI-feil" });
   }
 }
