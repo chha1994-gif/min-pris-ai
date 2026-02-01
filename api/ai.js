@@ -1,33 +1,36 @@
 import OpenAI from "openai";
 
-export default async function handler(req, res) {
-  try {
-    const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
-    const {
-      tekst,
-      timer,
-      dager,
-      arbeid,
-      kjøring,
-      forbruk,
-      avfall,
-      total
-    } = req.body;
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    const { beskrivelse, timepris, km, avfall, forbruk } = req.body;
 
     const prompt = `
-Lag en profesjonell tilbudstekst basert på dette:
+Du er en profesjonell håndverker.
+Regn ut tilbud basert på:
 
-Arbeid: ${tekst}
-Timer: ${timer}
-Dager: ${dager}
-Arbeid: ${arbeid} kr
-Kjøring: ${kjøring} kr
-Forbruk: ${forbruk} kr
+Beskrivelse: ${beskrivelse}
+Timepris: ${timepris} kr
+Km per dag: ${km}
 Avfall: ${avfall} kr
-Totalpris: ${total} kr
+Forbruk per dag: ${forbruk} kr
+
+Regn ut:
+- Antall dager
+- Antall timer
+- Arbeid
+- Kjøring
+- Forbruk
+- Totalpris
+
+Svar tydelig med tall.
 `;
 
     const completion = await client.chat.completions.create({
@@ -40,7 +43,6 @@ Totalpris: ${total} kr
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "AI-feil" });
+    res.status(500).json({ error: err.message });
   }
 }
