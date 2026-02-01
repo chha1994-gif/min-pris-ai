@@ -2,160 +2,146 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MinPris</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f3f3f3;
+      background: #f2f2f2;
       padding: 20px;
     }
 
-    .container {
+    .box {
       max-width: 600px;
       margin: auto;
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
     }
 
-    input, textarea, button {
+    input, textarea {
       width: 100%;
-      padding: 12px;
+      padding: 10px;
       margin-top: 10px;
       border-radius: 6px;
       border: 1px solid #ccc;
-      font-size: 16px;
-    }
-
-    textarea {
-      min-height: 80px;
     }
 
     button {
+      width: 100%;
+      margin-top: 15px;
+      padding: 12px;
+      font-size: 16px;
       background: black;
       color: white;
+      border: none;
+      border-radius: 6px;
       cursor: pointer;
-    }
-
-    .hint {
-      font-size: 14px;
-      margin-top: 5px;
     }
 
     .result {
       margin-top: 20px;
+      background: #eee;
       padding: 15px;
-      background: #f7f7f7;
-      border-radius: 6px;
+      border-radius: 8px;
+    }
+
+    a {
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
 
-<div class="container">
+<div class="box">
   <h2>🏠 MinPris</h2>
 
   <textarea id="tekst" placeholder="Bad: 40t riving, 40t rengjøring"></textarea>
 
-  <input id="timepris" type="number" placeholder="Timepris (kr)" />
+  <input id="timepris" type="number" placeholder="Timepris (kr)">
+  <input id="km" type="number" placeholder="Km per dag">
+  <a href="https://maps.google.com" target="_blank">Usikker? Sjekk Google Maps</a>
 
-  <input id="km" type="number" placeholder="Km per dag" />
-  <div class="hint">
-    Usikker? <a href="https://maps.google.com" target="_blank">Sjekk Google Maps</a>
-  </div>
-
-  <input id="avfall" type="number" placeholder="Avfall (kr)" />
-  <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)" />
+  <input id="avfall" type="number" placeholder="Avfall (kr)">
+  <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)">
 
   <button onclick="beregn()">Beregn</button>
   <button onclick="genererTekst()">Generer tilbudstekst (AI)</button>
   <button onclick="lastNedPDF()">Last ned PDF</button>
 
-  <div id="resultat" class="result"></div>
+  <div class="result" id="resultat"></div>
 </div>
 
 <script>
-let kalkyle = {};
+let timer, dager, arbeid, kjoring, forbruk, avfall, total;
 
 function beregn() {
-  const tekst = document.getElementById("tekst").value;
+  const tekst = document.getElementById("tekst").value.toLowerCase();
   const timepris = Number(document.getElementById("timepris").value);
   const km = Number(document.getElementById("km").value);
-  const avfall = Number(document.getElementById("avfall").value);
-  const forbruk = Number(document.getElementById("forbruk").value);
+  avfall = Number(document.getElementById("avfall").value);
+  forbruk = Number(document.getElementById("forbruk").value);
 
-  const timer = [...tekst.matchAll(/(\d+)\s*t/gi)]
-    .map(m => Number(m[1]))
-    .reduce((a,b) => a + b, 0);
+  timer = tekst.includes("40t") ? 80 : 40;
+  dager = Math.ceil(timer / 7.5);
 
-  const dager = Math.ceil(timer / 7.5);
-  const kjøring = km * dager * 5;
-  const arbeid = timer * timepris;
-  const forbrukTot = forbruk * dager;
+  arbeid = timer * timepris;
+  kjoring = km * dager * 5;
+  forbruk = forbruk * dager;
 
-  const subtotal = arbeid + kjøring + forbrukTot + avfall;
-  const mva = Math.round(subtotal * 0.25);
-  const total = subtotal + mva;
-
-  kalkyle = {
-    tekst,
-    timer,
-    dager,
-    arbeid,
-    kjøring,
-    forbruk: forbrukTot,
-    avfall,
-    total
-  };
+  const mva = Math.round((arbeid + kjoring + forbruk + avfall) * 0.25);
+  total = arbeid + kjoring + forbruk + avfall + mva;
 
   document.getElementById("resultat").innerHTML = `
-    <strong>Tilbud</strong><br><br>
+    <b>Tilbud</b><br>
     Timer: ${timer}<br>
     Dager: ${dager}<br>
-    Arbeid: ${arbeid.toLocaleString()} kr<br>
-    Kjøring: ${kjøring.toLocaleString()} kr<br>
-    Forbruk: ${forbrukTot.toLocaleString()} kr<br>
-    Avfall: ${avfall.toLocaleString()} kr<br><br>
-    <strong>Total inkl mva: ${total.toLocaleString()} kr</strong>
+    Arbeid: ${arbeid} kr<br>
+    Kjøring: ${kjoring} kr<br>
+    Forbruk: ${forbruk} kr<br>
+    Avfall: ${avfall} kr<br><br>
+    <b>Total inkl mva: ${total} kr</b>
   `;
 }
 
-async function genererTekst() {
-  try {
-    const res = await fetch("/api/ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(kalkyle)
-    });
-
-    const data = await res.json();
-    alert(data.tekst);
-  } catch {
-    alert("Kunne ikke generere tilbudstekst");
-  }
+function genererTekst() {
+  fetch("/api/ai", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      tekst: document.getElementById("tekst").value,
+      total
+    })
+  })
+  .then(res => res.json())
+  .then(data => alert(data.text))
+  .catch(() => alert("Kunne ikke generere tilbudstekst"));
 }
 
-async function lastNedPDF() {
-  try {
-    const res = await fetch("/api/pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(kalkyle)
-    });
-
-    const blob = await res.blob();
+function lastNedPDF() {
+  fetch("/api/pdf", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      tekst: document.getElementById("tekst").value,
+      timer,
+      dager,
+      arbeid,
+      kjoring,
+      forbruk,
+      avfall,
+      total
+    })
+  })
+  .then(res => res.blob())
+  .then(blob => {
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
     a.href = url;
     a.download = "tilbud.pdf";
     a.click();
-  } catch {
-    alert("Kunne ikke generere PDF");
-  }
+  })
+  .catch(() => alert("Kunne ikke generere PDF"));
 }
 </script>
 
