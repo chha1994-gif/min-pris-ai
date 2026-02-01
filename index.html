@@ -81,7 +81,6 @@
   <textarea id="tekst" placeholder="Beskriv jobben… f.eks bad: riving 18t, rengjøring 10t"></textarea>
 
   <input type="number" id="timepris" placeholder="Timepris (kr)" />
-
   <input type="number" id="km" placeholder="Km per dag" />
 
   <div class="hint">
@@ -89,7 +88,6 @@
   </div>
 
   <input type="number" id="avfall" placeholder="Avfall (kr)" />
-
   <input type="number" id="forbruk" placeholder="Forbruk per dag (kr)" />
 
   <button class="btn-main" onclick="beregn()">Beregn</button>
@@ -106,14 +104,13 @@ function beregn() {
   const avfall = Number(document.getElementById("avfall").value);
   const forbruk = Number(document.getElementById("forbruk").value);
 
-  // Finn timer i teksten (f.eks "18t")
   const timer = [...tekst.matchAll(/(\d+)\s*t/gi)]
     .map(m => Number(m[1]))
     .reduce((a,b) => a + b, 0);
 
   const dager = Math.ceil(timer / 7.5);
   const arbeid = timer * timepris;
-  const kjorekost = km * 5 * dager; // 5 kr pr km
+  const kjorekost = km * 5 * dager;
   const forbrukTotalt = forbruk * dager;
 
   const subtotal = arbeid + kjorekost + forbrukTotalt + avfall;
@@ -134,7 +131,34 @@ function beregn() {
 }
 
 function lastNedPDF() {
-  alert("PDF-generering er klar – kobles mot /api/pdf");
+  const data = {
+    tekst: document.getElementById("tekst").value,
+    timepris: Number(document.getElementById("timepris").value),
+    km: Number(document.getElementById("km").value),
+    avfall: Number(document.getElementById("avfall").value),
+    forbruk: Number(document.getElementById("forbruk").value)
+  };
+
+  fetch("/api/pdf", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("PDF-feil");
+    return res.blob();
+  })
+  .then(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tilbud.pdf";
+    a.click();
+  })
+  .catch(err => {
+    alert("Kunne ikke generere PDF");
+    console.error(err);
+  });
 }
 </script>
 
