@@ -3,169 +3,121 @@
 <head>
   <meta charset="UTF-8" />
   <title>MinPris – tilbudskalkulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f3f3f3;
+      font-family: system-ui, sans-serif;
+      background: #f5f5f5;
       padding: 20px;
     }
-    .container {
+    .card {
       max-width: 700px;
-      background: #fff;
+      margin: auto;
+      background: white;
       padding: 20px;
-      border-radius: 6px;
+      border-radius: 8px;
     }
-    h1 {
-      margin-top: 0;
-    }
-    textarea, input {
+    input, textarea, button {
       width: 100%;
+      margin-top: 10px;
       padding: 10px;
-      margin-bottom: 10px;
       font-size: 16px;
     }
     button {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      background: #111;
-      color: #fff;
+      background: black;
+      color: white;
       border: none;
       cursor: pointer;
-      margin-bottom: 10px;
-    }
-    button.secondary {
-      background: #333;
     }
     .result {
+      margin-top: 20px;
       background: #eee;
       padding: 15px;
-      margin-top: 10px;
       white-space: pre-line;
-    }
-    .hidden {
-      display: none;
     }
   </style>
 </head>
 <body>
 
-<div class="container">
+<div class="card">
   <h1>MinPris – tilbudskalkulator</h1>
 
-  <textarea id="description" rows="4" placeholder="Beskriv jobben (f.eks: Bad: 40t riving, 40t rengjøring)"></textarea>
-
-  <input id="hourRate" type="number" placeholder="Timepris (kr)" />
+  <textarea id="description" placeholder="Beskriv jobben (f.eks: 40t riving, 40t rengjøring)"></textarea>
+  <input id="rate" type="number" placeholder="Timepris (kr)" />
   <input id="kmPerDay" type="number" placeholder="Km per dag" />
-  <input id="waste" type="number" placeholder="Avfall (kr)" />
-  <input id="material" type="number" placeholder="Materiell / forbruk totalt (kr)" />
-  <input id="hmsPerDay" type="number" placeholder="HMS-forbruk per dag (kr)" />
+  <input id="waste" type="number" placeholder="Avfall totalt (kr)" />
+  <input id="material" type="number" placeholder="Materiell totalt (kr)" />
+  <input id="hmsPerDay" type="number" placeholder="HMS per dag (kr)" />
 
   <button onclick="calculate()">Beregn</button>
-  <button class="secondary" onclick="generateText()">Generer tilbudstekst</button>
+  <button onclick="generateText()">Generer tilbudstekst</button>
 
-  <div id="calcResult" class="result hidden"></div>
+  <div id="result" class="result"></div>
 
-  <div id="aiSection" class="hidden">
-    <h3>Tilbudstekst</h3>
-    <div id="aiText" class="result"></div>
-    <button onclick="copyText()">Kopier tekst</button>
-  </div>
+  <h3>Tilbudstekst</h3>
+  <div id="offerText" class="result"></div>
+  <button onclick="copyText()">Kopier tekst</button>
 </div>
 
 <script>
-let calculationData = null;
+let calculation = null;
 
-function calculate() {
-  const description = document.getElementById("description").value;
-  const hourRate = Number(document.getElementById("hourRate").value);
-  const kmPerDay = Number(document.getElementById("kmPerDay").value);
-  const waste = Number(document.getElementById("waste").value);
-  const material = Number(document.getElementById("material").value);
-  const hmsPerDay = Number(document.getElementById("hmsPerDay").value);
-
-  // Finn alle "XXt" i teksten
-  const hourMatches = description.match(/(\d+)\s*t/gi) || [];
-  let totalHours = 0;
-  hourMatches.forEach(m => {
-    totalHours += Number(m.replace(/[^0-9]/g, ""));
-  });
-
-  const days = Math.ceil(totalHours / 7.5);
-  const laborCost = totalHours * hourRate;
-  const drivingCost = kmPerDay * days * 15;
-  const hmsCost = hmsPerDay * days;
-
-  const total =
-    laborCost +
-    drivingCost +
-    waste +
-    material +
-    hmsCost;
-
-  calculationData = {
-    description,
-    totalHours,
-    days,
-    hourRate,
-    laborCost,
-    kmPerDay,
-    drivingCost,
-    waste,
-    material,
-    hmsCost,
-    total
+async function calculate() {
+  const payload = {
+    description: document.getElementById("description").value,
+    rate: Number(document.getElementById("rate").value),
+    kmPerDay: Number(document.getElementById("kmPerDay").value),
+    waste: Number(document.getElementById("waste").value),
+    material: Number(document.getElementById("material").value),
+    hmsPerDay: Number(document.getElementById("hmsPerDay").value)
   };
 
-  document.getElementById("calcResult").innerText =
-`Dager: ${days}
-Timer: ${totalHours}
-Arbeid: ${laborCost} kr
-Kjøring: ${drivingCost} kr
-Avfall: ${waste} kr
-Materiell: ${material} kr
-HMS: ${hmsCost} kr
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "calculate", payload })
+  });
 
-TOTAL: ${total} kr`;
+  const data = await res.json();
+  calculation = data;
 
-  document.getElementById("calcResult").classList.remove("hidden");
+  document.getElementById("result").innerText =
+`Dager: ${data.days}
+Timer: ${data.hours}
+Arbeid: ${data.laborCost} kr
+Kjøring: ${data.drivingCost} kr
+Avfall: ${data.waste} kr
+Materiell: ${data.material} kr
+HMS: ${data.hmsCost} kr
+
+TOTAL: ${data.total} kr`;
 }
 
 async function generateText() {
-  if (!calculationData) {
+  if (!calculation) {
     alert("Du må beregne først");
     return;
   }
 
-  document.getElementById("aiText").innerText = "Genererer tekst...";
-  document.getElementById("aiSection").classList.remove("hidden");
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "offer", payload: calculation })
+  });
+
+  const text = await res.text();
 
   try {
-    const res = await fetch("/api/ai", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(calculationData)
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || "AI-feil");
-    }
-
-    document.getElementById("aiText").innerText = data.text;
-  } catch (err) {
-    document.getElementById("aiText").innerText =
-      "Noe gikk galt med AI-generering.\n\n" + err.message;
+    const data = JSON.parse(text);
+    document.getElementById("offerText").innerText = data.text;
+  } catch {
+    document.getElementById("offerText").innerText = text;
   }
 }
 
 function copyText() {
-  const text = document.getElementById("aiText").innerText;
-  navigator.clipboard.writeText(text);
-  alert("Tekst kopiert");
+  navigator.clipboard.writeText(document.getElementById("offerText").innerText);
+  alert("Kopiert!");
 }
 </script>
 
