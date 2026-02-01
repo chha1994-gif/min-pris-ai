@@ -1,39 +1,34 @@
 import PDFDocument from "pdfkit";
 
-export const config = {
-  runtime: "nodejs"
-};
-
 export default async function handler(req, res) {
   try {
     const data = req.body;
 
     const doc = new PDFDocument();
-    const chunks = [];
+    const buffers = [];
 
-    doc.on("data", chunk => chunks.push(chunk));
+    doc.on("data", buffers.push.bind(buffers));
     doc.on("end", () => {
-      const pdfBuffer = Buffer.concat(chunks);
+      const pdf = Buffer.concat(buffers);
+
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", "attachment; filename=tilbud.pdf");
-      res.status(200).send(pdfBuffer);
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=tilbud.pdf"
+      );
+
+      res.status(200).send(pdf);
     });
 
     doc.fontSize(20).text("Tilbud", { underline: true });
     doc.moveDown();
 
-    doc.fontSize(12);
-    doc.text(Arbeid: ${data.tekst});
-    doc.text(Timer: ${data.timer});
-    doc.text(Dager: ${data.dager});
-    doc.text(Arbeid: ${data.arbeid} kr);
-    doc.text(Kjøring: ${data.kjoring} kr);
-    doc.text(Forbruk: ${data.forbruk} kr);
-    doc.text(Avfall: ${data.avfall} kr);
-    doc.text(Total: ${data.total} kr);
+    Object.entries(data).forEach(([key, value]) => {
+      doc.fontSize(12).text(${key}: ${value});
+    });
 
     doc.end();
   } catch (err) {
-    res.status(500).json({ error: "PDF-feil" });
+    res.status(500).json({ error: "PDF-feil", details: err.message });
   }
 }
