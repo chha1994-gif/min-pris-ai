@@ -1,34 +1,20 @@
 import PDFDocument from "pdfkit";
 
 export default async function handler(req, res) {
-  try {
-    const data = req.body;
+  const data = req.body;
 
-    const doc = new PDFDocument();
-    const buffers = [];
+  const doc = new PDFDocument();
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", "attachment; filename=tilbud.pdf");
 
-    doc.on("data", buffers.push.bind(buffers));
-    doc.on("end", () => {
-      const pdf = Buffer.concat(buffers);
+  doc.pipe(res);
 
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader(
-        "Content-Disposition",
-        "attachment; filename=tilbud.pdf"
-      );
+  doc.fontSize(20).text("Tilbud", { underline: true });
+  doc.moveDown();
 
-      res.status(200).send(pdf);
-    });
+  Object.entries(data).forEach(([key, value]) => {
+    doc.fontSize(12).text(${key}: ${value});
+  });
 
-    doc.fontSize(20).text("Tilbud", { underline: true });
-    doc.moveDown();
-
-    Object.entries(data).forEach(([key, value]) => {
-      doc.fontSize(12).text(${key}: ${value});
-    });
-
-    doc.end();
-  } catch (err) {
-    res.status(500).json({ error: "PDF-feil", details: err.message });
-  }
+  doc.end();
 }
