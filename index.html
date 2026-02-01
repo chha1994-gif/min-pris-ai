@@ -36,6 +36,11 @@
       cursor: pointer;
     }
 
+    .hint {
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
     .result {
       margin-top: 20px;
       background: #f7f7f7;
@@ -55,10 +60,15 @@
 <div class="container">
   <h1>🏠 MinPris</h1>
 
-  <textarea id="tekst" placeholder="Beskriv jobben... (f.eks bad: 40t riving, 30t vask)"></textarea>
+  <textarea id="tekst" placeholder="Beskriv jobben (f.eks bad: 40t riving, 30t rengjøring)"></textarea>
 
   <input id="timepris" type="number" placeholder="Timepris (kr)" />
   <input id="km" type="number" placeholder="Km per dag" />
+
+  <div class="hint">
+    Usikker? <a href="https://www.google.com/maps" target="_blank">Sjekk Google Maps</a>
+  </div>
+
   <input id="avfall" type="number" placeholder="Avfall (kr)" />
   <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)" />
 
