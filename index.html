@@ -9,67 +9,44 @@
     body {
       font-family: Arial, sans-serif;
       background: #f3f3f3;
-      margin: 0;
       padding: 20px;
     }
 
     .container {
-      max-width: 520px;
+      max-width: 650px;
       margin: auto;
-      background: #fff;
+      background: white;
       padding: 25px;
-      border-radius: 12px;
+      border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
-    h1 {
-      text-align: center;
-    }
-
-    textarea, input {
+    input, textarea, button {
       width: 100%;
       padding: 12px;
       margin-top: 10px;
+      font-size: 16px;
       border-radius: 6px;
       border: 1px solid #ccc;
-      font-size: 16px;
-    }
-
-    textarea {
-      min-height: 120px;
-      resize: vertical;
-    }
-
-    .hint {
-      font-size: 14px;
-      margin-top: 5px;
     }
 
     button {
-      width: 100%;
-      padding: 14px;
-      margin-top: 15px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: none;
+      background: black;
+      color: white;
       cursor: pointer;
-    }
-
-    .btn-main {
-      background: #000;
-      color: white;
-    }
-
-    .btn-pdf {
-      background: #222;
-      color: white;
     }
 
     .result {
       margin-top: 20px;
-      padding: 15px;
       background: #f7f7f7;
+      padding: 15px;
       border-radius: 6px;
+    }
+
+    @media print {
+      textarea, input, button {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -78,22 +55,18 @@
 <div class="container">
   <h1>🏠 MinPris</h1>
 
-  <textarea id="tekst" placeholder="Beskriv jobben… f.eks bad: riving 18t, rengjøring 10t"></textarea>
+  <textarea id="tekst" placeholder="Beskriv jobben... (f.eks bad: 40t riving, 30t vask)"></textarea>
 
-  <input type="number" id="timepris" placeholder="Timepris (kr)" />
-  <input type="number" id="km" placeholder="Km per dag" />
+  <input id="timepris" type="number" placeholder="Timepris (kr)" />
+  <input id="km" type="number" placeholder="Km per dag" />
+  <input id="avfall" type="number" placeholder="Avfall (kr)" />
+  <input id="forbruk" type="number" placeholder="Forbruk per dag (kr)" />
 
-  <div class="hint">
-    Usikker? <a href="https://www.google.com/maps" target="_blank">Sjekk Google Maps</a>
-  </div>
+  <button onclick="beregn()">Beregn</button>
+  <button onclick="genererTekst()">Generer tilbudstekst (AI)</button>
+  <button onclick="lastNedPDF()">Last ned PDF</button>
 
-  <input type="number" id="avfall" placeholder="Avfall (kr)" />
-  <input type="number" id="forbruk" placeholder="Forbruk per dag (kr)" />
-
-  <button class="btn-main" onclick="beregn()">Beregn</button>
-  <button class="btn-pdf" onclick="lastNedPDF()">Last ned tilbud (PDF)</button>
-
-  <div class="result" id="resultat"></div>
+  <div id="resultat" class="result"></div>
 </div>
 
 <script>
@@ -106,7 +79,7 @@ function beregn() {
 
   const timer = [...tekst.matchAll(/(\d+)\s*t/gi)]
     .map(m => Number(m[1]))
-    .reduce((a,b) => a + b, 0);
+    .reduce((a, b) => a + b, 0);
 
   const dager = Math.ceil(timer / 7.5);
   const arbeid = timer * timepris;
@@ -114,51 +87,45 @@ function beregn() {
   const forbrukTotalt = forbruk * dager;
 
   const subtotal = arbeid + kjorekost + forbrukTotalt + avfall;
-  const mva = subtotal * 0.25;
+  const mva = Math.round(subtotal * 0.25);
   const total = subtotal + mva;
 
   document.getElementById("resultat").innerHTML = `
-    <strong>Resultat:</strong><br><br>
-    ⏱ Timer: ${timer} t<br>
-    📅 Arbeidsdager: ${dager}<br>
-    💼 Arbeid: ${arbeid.toLocaleString()} kr<br>
-    🚗 Kjøring: ${kjorekost.toLocaleString()} kr<br>
-    🧱 Forbruk: ${forbrukTotalt.toLocaleString()} kr<br>
-    🗑 Avfall: ${avfall.toLocaleString()} kr<br><br>
-    💰 Pris eks. mva: ${subtotal.toLocaleString()} kr<br>
-    💰 Pris inkl. mva: <strong>${total.toLocaleString()} kr</strong>
+    <h3>Tilbud</h3>
+    <p>Timer: ${timer}</p>
+    <p>Dager: ${dager}</p>
+    <p>Arbeid: ${arbeid.toLocaleString()} kr</p>
+    <p>Kjøring: ${kjorekost.toLocaleString()} kr</p>
+    <p>Forbruk: ${forbrukTotalt.toLocaleString()} kr</p>
+    <p>Avfall: ${avfall.toLocaleString()} kr</p>
+    <hr>
+    <p><b>Sum eks. mva:</b> ${subtotal.toLocaleString()} kr</p>
+    <p><b>MVA:</b> ${mva.toLocaleString()} kr</p>
+    <h2>Total: ${total.toLocaleString()} kr</h2>
+  `;
+}
+
+async function genererTekst() {
+  const tekst = document.getElementById("tekst").value;
+  const total = document.getElementById("resultat").innerText;
+
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tekst, total })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("resultat").innerHTML += `
+    <hr>
+    <h3>Forslag til tilbudstekst</h3>
+    <p>${data.tekst.replace(/\n/g, "<br>")}</p>
   `;
 }
 
 function lastNedPDF() {
-  const data = {
-    tekst: document.getElementById("tekst").value,
-    timepris: Number(document.getElementById("timepris").value),
-    km: Number(document.getElementById("km").value),
-    avfall: Number(document.getElementById("avfall").value),
-    forbruk: Number(document.getElementById("forbruk").value)
-  };
-
-  fetch("/api/pdf", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  })
-  .then(res => {
-    if (!res.ok) throw new Error("PDF-feil");
-    return res.blob();
-  })
-  .then(blob => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "tilbud.pdf";
-    a.click();
-  })
-  .catch(err => {
-    alert("Kunne ikke generere PDF");
-    console.error(err);
-  });
+  window.print();
 }
 </script>
 
