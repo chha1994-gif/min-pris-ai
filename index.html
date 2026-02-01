@@ -1,24 +1,27 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>MinPris – tilbudskalkulator</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      padding: 30px;
+      background: #f4f4f4;
+      padding: 20px;
     }
 
-    h1 {
-      margin-bottom: 20px;
+    .box {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
     }
 
     input, textarea, button {
       width: 100%;
       padding: 10px;
-      margin: 6px 0;
+      margin-top: 10px;
       font-size: 16px;
     }
 
@@ -29,92 +32,70 @@
       cursor: pointer;
     }
 
-    button:hover {
-      opacity: 0.8;
-    }
-
-    .box {
-      background: white;
-      padding: 20px;
-      border-radius: 6px;
-      max-width: 600px;
-    }
-
     #resultat {
       margin-top: 20px;
       padding: 10px;
       background: #eee;
+      white-space: pre-wrap;
     }
   </style>
 </head>
 <body>
 
-  <div class="box">
-    <h1>MinPris – tilbudskalkulator</h1>
+<div class="box">
+  <h1>MinPris – tilbudskalkulator</h1>
 
-    <textarea id="beskrivelse" placeholder="Beskrivelse av jobben"></textarea>
+  <textarea id="beskrivelse" placeholder="Beskriv jobben (f.eks: 2 dager og 5 timer arbeid)"></textarea>
 
-    <input id="timer" type="number" placeholder="Timer">
-    <input id="dager" type="number" placeholder="Dager">
-    <input id="arbeid" type="number" placeholder="Arbeid (kr)">
-    <input id="kjoring" type="number" placeholder="Kjøring (kr)">
-    <input id="forbruk" type="number" placeholder="Forbruk (kr)">
-    <input id="avfall" type="number" placeholder="Avfall (kr)">
+  <input id="timepris" type="number" placeholder="Timepris (kr)">
+  <input id="km" type="number" placeholder="Km per dag">
+  <input id="kmpris" type="number" placeholder="Pris per km (kr)">
 
-    <button onclick="beregn()">Beregn</button>
-    <button onclick="lagTilbud()">Generer tilbudstekst</button>
-    <button onclick="lastNedPDF()">Last ned PDF</button>
+  <button onclick="beregn()">Beregn tilbud</button>
 
-    <div id="resultat"></div>
-  </div>
+  <div id="resultat"></div>
+</div>
 
-  <script>
-    function beregn() {
-      const arbeid = Number(document.getElementById("arbeid").value || 0);
-      const kjoring = Number(document.getElementById("kjoring").value || 0);
-      const forbruk = Number(document.getElementById("forbruk").value || 0);
-      const avfall = Number(document.getElementById("avfall").value || 0);
+<script>
+function beregn() {
+  const tekst = document.getElementById("beskrivelse").value.toLowerCase();
+  const timepris = Number(document.getElementById("timepris").value);
+  const km = Number(document.getElementById("km").value);
+  const kmpris = Number(document.getElementById("kmpris").value);
 
-      const total = arbeid + kjoring + forbruk + avfall;
+  let dager = 0;
+  let timer = 0;
 
-      document.getElementById("resultat").innerHTML =
-        "<strong>Totalpris:</strong> " + total + " kr";
-    }
+  const dagMatch = tekst.match(/(\d+)\s*dager?/);
+  const timeMatch = tekst.match(/(\d+)\s*timer?/);
 
-    function lagTilbud() {
-      const tekst = `
-Tilbud:
+  if (dagMatch) dager = parseInt(dagMatch[1]);
+  if (timeMatch) timer = parseInt(timeMatch[1]);
 
-Beskrivelse:
-${document.getElementById("beskrivelse").value}
+  const arbeid = (dager * 8 * timepris) + (timer * timepris);
+  const kjøring = dager * km * kmpris;
+  const total = arbeid + kjøring;
 
-Timer: ${document.getElementById("timer").value}
-Dager: ${document.getElementById("dager").value}
+  document.getElementById("resultat").innerHTML = `
+📄 TILBUD
 
-Arbeid: ${document.getElementById("arbeid").value} kr
-Kjøring: ${document.getElementById("kjoring").value} kr
-Forbruk: ${document.getElementById("forbruk").value} kr
-Avfall: ${document.getElementById("avfall").value} kr
+Arbeid:
+- Dager: ${dager}
+- Timer: ${timer}
+- Timepris: ${timepris} kr
+
+Kjøring:
+- ${km} km / dag
+- ${kmpris} kr per km
+
+──────────────
+Arbeid: ${arbeid} kr
+Kjøring: ${kjøring} kr
+
+✅ TOTALPRIS: ${total} kr
 `;
-
-      document.getElementById("resultat").innerText = tekst;
-    }
-
-    function lastNedPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      const tekst = document.getElementById("resultat").innerText;
-
-      if (!tekst) {
-        alert("Generer tilbud først!");
-        return;
-      }
-
-      doc.text(tekst, 10, 10);
-      doc.save("tilbud.pdf");
-    }
-  </script>
+}
+</script>
 
 </body>
 </html>
