@@ -1,53 +1,62 @@
 export default async function handler(req, res) {
-  // Tillat kun POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  try {
-    const {
-      description,
-      totalHours,
+  const { type, payload } = req.body;
+
+  // =========================
+  // 🔢 BEREGNING
+  // =========================
+  if (type === "calculate") {
+    const { description, rate, kmPerDay, waste, material, hmsPerDay } = payload;
+
+    // Finn timer i teksten (f.eks 40t, 10 timer)
+    const matches = description.match(/(\d+)\s*t/g) || [];
+    const hours = matches.reduce((sum, m) => sum + Number(m), 0);
+
+    const days = Math.ceil(hours / 7.5);
+    const laborCost = hours * rate;
+    const drivingCost = kmPerDay * days * 15;
+    const hmsCost = hmsPerDay * days;
+
+    const total =
+      laborCost +
+      drivingCost +
+      waste +
+      material +
+      hmsCost;
+
+    return res.status(200).json({
+      hours,
       days,
-      hourRate,
       laborCost,
-      kmPerDay,
       drivingCost,
       waste,
       material,
       hmsCost,
       total
-    } = req.body;
+    });
+  }
 
-    if (!description || !total) {
-      return res.status(400).json({ error: "Mangler data" });
-    }
-
+  // =========================
+  // ✍️ TILBUDSTEKST
+  // =========================
+  if (type === "offer") {
     const prompt = `
-Skriv en profesjonell, kort og tydelig tilbudstekst på norsk basert på dette:
+Lag en profesjonell norsk tilbudstekst basert på dette:
 
-Beskrivelse av jobb:
-${description}
-
-Detaljer:
-- Timer totalt: ${totalHours}
-- Antall dager: ${days}
-- Timepris: ${hourRate} kr
-- Arbeid: ${laborCost} kr
-- Kjøring: ${drivingCost} kr
-- Avfall: ${waste} kr
-- Materiell: ${material} kr
-- HMS: ${hmsCost} kr
-
-Totalpris: ${total} kr
-
-Teksten skal:
-- være klar for å sendes til kunde
-- forklare kort hva som er inkludert
-- avsluttes med totalpris
+Timer: ${payload.hours}
+Dager: ${payload.days}
+Arbeid: ${payload.laborCost} kr
+Kjøring: ${payload.drivingCost} kr
+Avfall: ${payload.waste} kr
+Materiell: ${payload.material} kr
+HMS: ${payload.hmsCost} kr
+Totalpris: ${payload.total} kr
 `;
 
-    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+    const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -56,30 +65,25 @@ Teksten skal:
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "Du er en profesjonell norsk håndverker som skriver tilbud." },
+          { role: "system", content: "Du skriver korte, tydelige norske tilbud." },
           { role: "user", content: prompt }
         ],
         temperature: 0.4
       })
     });
 
-    const data = await openaiRes.json();
+    const raw = await aiRes.text();
 
-    if (!openaiRes.ok) {
-      console.error("OpenAI error:", data);
-      return res.status(500).json({ error: "Feil fra OpenAI" });
+    if (!aiRes.ok) {
+      return res.status(500).json({ error: raw });
     }
 
-    const text = data.choices?.[0]?.message?.content;
+    const data = JSON.parse(raw);
 
-    if (!text) {
-      return res.status(500).json({ error: "Tom respons fra AI" });
-    }
-
-    res.status(200).json({ text });
-
-  } catch (err) {
-    console.error("Serverfeil:", err);
-    res.status(500).json({ error: "Intern serverfeil" });
+    return res.status(200).json({
+      text: data.choices[0].message.content
+    });
   }
+
+  res.status(400).json({ error: "Ukjent type" });
 }
