@@ -21,7 +21,6 @@ export default async function handler(req, res) {
       kmPerDag
     } = req.body;
 
-    // Enkel validering – fail fast
     if (!beskrivelse || !timer || !dager || !totalEksMva) {
       return res.status(400).json({
         error: "Manglende data i kalkyle"
@@ -39,27 +38,29 @@ Jobbbeskrivelse:
 ${beskrivelse}
 
 Kalkyle (ferdig beregnet – tallene er faste):
-- Timer: ${timer}
-- Dager: ${dager}
-- Timepris: ${timepris} kr
-- Arbeid: ${arbeid} kr
-- Kjøring (${kmPerDag} km per dag): ${kjøring} kr
-- Avfall: ${avfall} kr
-- Materiell: ${materiell} kr
-- HMS: ${hms} kr
+Arbeid: ${arbeid} kr
+Kjøring (${kmPerDag} km per dag i ${dager} dager): ${kjøring} kr
+Avfall: ${avfall} kr
+Materiell: ${materiell} kr
+HMS-forbruk: ${hms} kr
+
+Timer totalt: ${timer}
+Antall dager: ${dager}
+Timepris: ${timepris} kr
 
 Totalpris eks. mva: ${totalEksMva} kr
 Totalpris inkl. mva: ${totalInkMva} kr
 
-VIKTIG:
-- Tallene over er endelige og skal ikke endres, tolkes eller justeres
-- Ikke legg til nye kostnader
-- Ikke rund av eller estimer priser
-- Ikke bruk punktliste
+VIKTIG – MÅ FØLGES:
+- Alle tall over er endelige og skal brukes nøyaktig slik de er oppgitt
+- Ikke endre, tolke, estimere eller runde tall
+- Ikke legg til nye kostnader eller forutsetninger
 - Ikke bruk emoji
 
 Oppgave:
-Skriv en kort, ryddig og profesjonell tilbudstekst på norsk basert på informasjonen over.
+Skriv en profesjonell og ryddig tilbudstekst på norsk.
+Du bestemmer selv struktur, rekkefølge og avsnitt.
+Forklar kort hva tilbudet inkluderer.
 Avslutt med en høflig setning om at kunden gjerne kan ta kontakt ved spørsmål eller avklaringer.
 `;
 
