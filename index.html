@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
-  <title>MinPris – tilbudskalkulator</title>
+  <title>🏠 MinPris – tilbudskalkulator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -33,11 +33,11 @@
     }
 
     h1 {
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       font-size: 1.6rem;
     }
 
-    p.subtitle {
+    .subtitle {
       color: var(--muted);
       margin-top: 0;
       margin-bottom: 20px;
@@ -72,6 +72,17 @@
       .grid-2 {
         grid-template-columns: 1fr;
       }
+    }
+
+    .maps-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
     }
 
     .buttons {
@@ -117,6 +128,7 @@
       margin-top: 10px;
       background: var(--success);
       color: white;
+      width: 100%;
     }
   </style>
 </head>
@@ -127,7 +139,7 @@
     <p class="subtitle">Kalkuler pris og generer profesjonell tilbudstekst</p>
 
     <label>Jobbbeskrivelse</label>
-    <textarea id="beskrivelse" rows="4" placeholder="Beskriv jobben..."></textarea>
+    <textarea id="beskrivelse" rows="4" placeholder="Beskriv jobben, f.eks: 40t riving, 20t rengjøring"></textarea>
 
     <label>Timepris (kr)</label>
     <input id="timepris" type="number" />
@@ -136,7 +148,16 @@
       <div>
         <label>Kilometer per dag</label>
         <input id="kmPerDag" type="number" />
+
+        <a
+          href="https://www.google.com/maps"
+          target="_blank"
+          class="maps-link"
+        >
+          🗺️ Usikker? Sjekk Google Maps
+        </a>
       </div>
+
       <div>
         <label>Pris per km (kr)</label>
         <input id="prisPerKm" type="number" value="15" />
@@ -175,7 +196,7 @@ document.getElementById("beregnBtn").onclick = () => {
   const prisPerKm = Number(document.getElementById("prisPerKm").value || 15);
   const avfall = Number(document.getElementById("avfall").value || 0);
   const materiell = Number(document.getElementById("materiell").value || 0);
-  const hms = Number(document.getElementById("hms").value || 0);
+  const hmsPerDag = Number(document.getElementById("hms").value || 0);
 
   if (!beskrivelse || !timepris || !kmPerDag) {
     alert("Fyll inn beskrivelse, timepris og km per dag");
@@ -187,12 +208,12 @@ document.getElementById("beregnBtn").onclick = () => {
       .map(x => Number(x.replace(/\D/g, "")))
       .reduce((a,b) => a + b, 0);
 
-  const dager = Math.ceil(timer / 7.5);
+  const dager = Math.max(1, Math.ceil(timer / 7.5));
   const arbeid = timer * timepris;
   const kjøring = dager * kmPerDag * prisPerKm;
-  const hmsTotal = dager * hms;
+  const hms = dager * hmsPerDag;
 
-  const totalEksMva = arbeid + kjøring + avfall + materiell + hmsTotal;
+  const totalEksMva = arbeid + kjøring + avfall + materiell + hms;
   const mva = totalEksMva * 0.25;
   const totalInkMva = totalEksMva + mva;
 
@@ -200,11 +221,14 @@ document.getElementById("beregnBtn").onclick = () => {
     beskrivelse,
     timer,
     dager,
+    timepris,
+    kmPerDag,
+    prisPerKm,
     arbeid,
     kjøring,
     avfall,
     materiell,
-    hms: hmsTotal,
+    hms,
     totalEksMva,
     totalInkMva
   };
@@ -217,7 +241,7 @@ Arbeid: ${arbeid} kr
 Kjøring: ${kjøring} kr
 Avfall: ${avfall} kr
 Materiell: ${materiell} kr
-HMS: ${hmsTotal} kr
+HMS: ${hms} kr
 
 TOTAL eks. mva: ${Math.round(totalEksMva)} kr
 MVA (25 %): ${Math.round(mva)} kr
@@ -227,28 +251,38 @@ TOTAL inkl. mva: ${Math.round(totalInkMva)} kr`;
 };
 
 document.getElementById("aiBtn").onclick = async () => {
-  document.getElementById("tilbud").textContent = "Genererer tilbudstekst…";
-  document.getElementById("kopierBtn").style.display = "none";
+  const tilbudEl = document.getElementById("tilbud");
+  const kopiBtn = document.getElementById("kopierBtn");
 
-  const res = await fetch("/api/ai", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(kalkyle)
-  });
+  tilbudEl.textContent = "Genererer tilbudstekst…";
+  kopiBtn.style.display = "none";
 
-  const data = await res.json();
+  try {
+    const res = await fetch("/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(kalkyle)
+    });
 
-  document.getElementById("tilbud").textContent =
-    data.text || "Noe gikk galt med AI-generering.";
+    if (!res.ok) {
+      tilbudEl.textContent = await res.text();
+      return;
+    }
 
-  document.getElementById("kopierBtn").style.display = "block";
+    const data = await res.json();
+    tilbudEl.textContent = data.text || "AI returnerte ingen tekst.";
+    kopiBtn.style.display = "block";
+
+  } catch (err) {
+    tilbudEl.textContent = "Teknisk feil: " + err.message;
+  }
 };
 
 document.getElementById("kopierBtn").onclick = () => {
   navigator.clipboard.writeText(
     document.getElementById("tilbud").textContent
   );
-  alert("Tekst kopiert");
+  alert("Tilbudstekst kopiert");
 };
 </script>
 </body>
