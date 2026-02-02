@@ -1,72 +1,38 @@
+01:09
+Du har sendt
+import OpenAI from "openai";
+
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
-      return res.status(405).json({ error: "Method not allowed" });
+      return res.status(405).json({ error: "Only POST allowed" });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: "OPENAI_API_KEY mangler" });
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "Missing OPENAI_API_KEY" });
     }
 
-    const {
-      beskrivelse,
-      timer,
-      dager,
-      arbeid,
-      kjøring,
-      avfall,
-      materiell,
-      hms,
-      total
-    } = req.body;
-
-    const prompt = `
-Lag en profesjonell tilbudstekst på norsk.
-
-Jobb:
-${beskrivelse}
-
-Detaljer:
-Timer: ${timer}
-Dager: ${dager}
-Arbeid: ${arbeid} kr
-Kjøring: ${kjøring} kr
-Avfall: ${avfall} kr
-Materiell: ${materiell} kr
-HMS: ${hms} kr
-
-Totalpris: ${total} kr
-`;
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": Bearer ${apiKey}
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "Du er en profesjonell håndverker som skriver tilbud." },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.3
-      })
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const data = await response.json();
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "Svar kun med tekst." },
+        { role: "user", content: "Si hei og bekreft at API fungerer." }
+      ],
+      max_tokens: 50,
+    });
 
-    if (!data.choices?.[0]?.message?.content) {
-      return res.status(500).json({ error: "Ugyldig svar fra OpenAI", data });
-    }
-
-    return res.status(200).json({
-      text: data.choices[0].message.content
+    res.status(200).json({
+      text: response.choices[0].message.content,
     });
 
   } catch (err) {
     console.error("AI ERROR:", err);
-    return res.status(500).json({ error: err.message });
+    res.status(500).json({
+      error: err.message || "Unknown error",
+    });
   }
 }
