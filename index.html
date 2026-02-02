@@ -46,7 +46,7 @@
   <div class="box">
     <h1>MinPris – tilbudskalkulator</h1>
 
-    <textarea id="beskrivelse" rows="4" placeholder="Beskriv jobben..."></textarea>
+    <textarea id="beskrivelse" rows="4" placeholder="Beskriv jobben (f.eks. 2 dager riving + 6t maling)..."></textarea>
 
     <input id="timepris" type="number" placeholder="Timepris (kr)" />
     <input id="kmPerDag" type="number" placeholder="Km per dag" />
@@ -68,42 +68,43 @@
 <script>
 let kalkyle = null;
 
+/* ---------------- BEREGN ---------------- */
 document.getElementById("beregnBtn").onclick = () => {
-  const beskrivelse = document.getElementById("beskrivelse").value;
+  const beskrivelse = document.getElementById("beskrivelse").value.trim();
   const timepris = Number(document.getElementById("timepris").value);
   const kmPerDag = Number(document.getElementById("kmPerDag").value);
   const avfall = Number(document.getElementById("avfall").value || 0);
   const materiell = Number(document.getElementById("materiell").value || 0);
-  const hms = Number(document.getElementById("hms").value || 0);
+  const hmsPerDag = Number(document.getElementById("hms").value || 0);
 
   if (!beskrivelse || !timepris || !kmPerDag) {
     alert("Fyll inn beskrivelse, timepris og km per dag");
     return;
   }
 
-  // 🔹 Enkel AI-fri parsing av timer (fallback)
+  // Enkel parsing av timer fra tekst (fallback)
   const timer =
     (beskrivelse.match(/(\d+)\s*t/gi) || [])
       .map(x => Number(x.replace(/\D/g, "")))
       .reduce((a,b) => a + b, 0);
 
-  const dager = Math.ceil(timer / 7.5);
+  const dager = Math.max(1, Math.ceil(timer / 7.5));
   const arbeid = timer * timepris;
   const kjøring = dager * kmPerDag * 15;
-  const hmsTotal = dager * hms;
+  const hms = dager * hmsPerDag;
 
-  const total =
-    arbeid + kjøring + avfall + materiell + hmsTotal;
+  const total = arbeid + kjøring + avfall + materiell + hms;
 
   kalkyle = {
     beskrivelse,
     timer,
     dager,
+    timepris,
     arbeid,
     kjøring,
     avfall,
     materiell,
-    hms: hmsTotal,
+    hms,
     total
   };
 
@@ -114,35 +115,54 @@ Arbeid: ${arbeid} kr
 Kjøring: ${kjøring} kr
 Avfall: ${avfall} kr
 Materiell: ${materiell} kr
-HMS: ${hmsTotal} kr
+HMS: ${hms} kr
 
 TOTAL: ${total} kr`;
 
   document.getElementById("aiBtn").disabled = false;
 };
 
+/* ---------------- AI ---------------- */
 document.getElementById("aiBtn").onclick = async () => {
-  document.getElementById("tilbud").textContent = "Genererer tekst...";
-  document.getElementById("kopierBtn").style.display = "none";
+  const tilbudEl = document.getElementById("tilbud");
+  const kopiBtn = document.getElementById("kopierBtn");
 
-  const res = await fetch("/api/ai", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(kalkyle)
-  });
+  tilbudEl.textContent = "Genererer tekst...";
+  kopiBtn.style.display = "none";
 
-  const data = await res.json();
+  try {
+    const res = await fetch("/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(kalkyle),
+    });
 
-  if (!data.text) {
-    document.getElementById("tilbud").textContent =
-      "Noe gikk galt med AI-generering.";
-    return;
+    // 🔴 Viktig: backend-feil er ofte ren tekst
+    if (!res.ok) {
+      const text = await res.text();
+      tilbudEl.textContent =
+        "AI-feil:\n" + text;
+      return;
+    }
+
+    const data = await res.json();
+
+    if (!data.text) {
+      tilbudEl.textContent =
+        "AI svarte uten tekst.";
+      return;
+    }
+
+    tilbudEl.textContent = data.text;
+    kopiBtn.style.display = "block";
+
+  } catch (err) {
+    tilbudEl.textContent =
+      "Teknisk feil:\n" + err.message;
   }
-
-  document.getElementById("tilbud").textContent = data.text;
-  document.getElementById("kopierBtn").style.display = "block";
 };
 
+/* ---------------- KOPIER ---------------- */
 document.getElementById("kopierBtn").onclick = () => {
   navigator.clipboard.writeText(
     document.getElementById("tilbud").textContent
