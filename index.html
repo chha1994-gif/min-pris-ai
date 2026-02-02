@@ -32,6 +32,11 @@
       box-shadow: 0 20px 40px rgba(0,0,0,0.08);
     }
 
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
     h1 {
       margin-bottom: 6px;
       font-size: 1.6rem;
@@ -40,7 +45,6 @@
     .subtitle {
       color: var(--muted);
       margin-top: 0;
-      margin-bottom: 20px;
     }
 
     label {
@@ -122,6 +126,8 @@
       border-radius: 12px;
       white-space: pre-wrap;
       margin-top: 10px;
+      line-height: 1.6;
+      font-size: 15px;
     }
 
     #kopierBtn {
@@ -135,8 +141,11 @@
 
 <body>
   <div class="box">
-    <h1>🏠 MinPris – tilbudskalkulator</h1>
-    <p class="subtitle">Kalkuler pris og generer profesjonell tilbudstekst</p>
+
+    <div class="header">
+      <h1>🏠 MinPris – tilbudskalkulator</h1>
+      <p class="subtitle">Kalkuler pris og generer profesjonell tilbudstekst</p>
+    </div>
 
     <label>Jobbbeskrivelse</label>
     <textarea id="beskrivelse" rows="4" placeholder="Beskriv jobben, f.eks: 40t riving, 20t rengjøring"></textarea>
@@ -149,11 +158,7 @@
         <label>Kilometer per dag</label>
         <input id="kmPerDag" type="number" />
 
-        <a
-          href="https://www.google.com/maps"
-          target="_blank"
-          class="maps-link"
-        >
+        <a href="https://www.google.com/maps" target="_blank" class="maps-link">
           🗺️ Usikker? Sjekk Google Maps
         </a>
       </div>
@@ -184,6 +189,7 @@
     <h3>Tilbudstekst</h3>
     <pre id="tilbud"></pre>
     <button id="kopierBtn" style="display:none;">Kopier tekst</button>
+
   </div>
 
 <script>
@@ -234,18 +240,19 @@ document.getElementById("beregnBtn").onclick = () => {
   };
 
   document.getElementById("resultat").textContent =
-`Dager: ${dager}
-Timer: ${timer}
+`Arbeidsomfang:
+${timer} timer fordelt over ${dager} dag(er)
 
+Prisoversikt:
 Arbeid: ${arbeid} kr
 Kjøring: ${kjøring} kr
 Avfall: ${avfall} kr
 Materiell: ${materiell} kr
 HMS: ${hms} kr
 
-TOTAL eks. mva: ${Math.round(totalEksMva)} kr
+Totalt eks. mva: ${Math.round(totalEksMva)} kr
 MVA (25 %): ${Math.round(mva)} kr
-TOTAL inkl. mva: ${Math.round(totalInkMva)} kr`;
+Totalt inkl. mva: ${Math.round(totalInkMva)} kr`;
 
   document.getElementById("aiBtn").disabled = false;
 };
