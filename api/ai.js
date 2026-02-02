@@ -15,37 +15,52 @@ export default async function handler(req, res) {
       avfall,
       materiell,
       hms,
-      total,
+      totalEksMva,
+      totalInkMva,
       timepris,
       kmPerDag
     } = req.body;
+
+    // Enkel validering – fail fast
+    if (!beskrivelse || !timer || !dager || !totalEksMva) {
+      return res.status(400).json({
+        error: "Manglende data i kalkyle"
+      });
+    }
 
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
 
     const prompt = `
-Du er en profesjonell håndverker som skriver tilbud til kunde.
+Du er en profesjonell norsk håndverker som skriver tilbud til kunde.
 
 Jobbbeskrivelse:
 ${beskrivelse}
 
-Kalkyle:
+Kalkyle (ferdig beregnet – tallene er faste):
 - Timer: ${timer}
 - Dager: ${dager}
 - Timepris: ${timepris} kr
 - Arbeid: ${arbeid} kr
-- Kjøring (${kmPerDag} km/dag): ${kjøring} kr
+- Kjøring (${kmPerDag} km per dag): ${kjøring} kr
 - Avfall: ${avfall} kr
 - Materiell: ${materiell} kr
 - HMS: ${hms} kr
 
-Totalpris: ${total} kr
+Totalpris eks. mva: ${totalEksMva} kr
+Totalpris inkl. mva: ${totalInkMva} kr
 
-Skriv en kort, ryddig og profesjonell tilbudstekst på norsk.
-Ikke bruk punktliste.
-Ikke bruk emoji.
-Avslutt med at kunden kan ta kontakt ved spørsmål.
+VIKTIG:
+- Tallene over er endelige og skal ikke endres, tolkes eller justeres
+- Ikke legg til nye kostnader
+- Ikke rund av eller estimer priser
+- Ikke bruk punktliste
+- Ikke bruk emoji
+
+Oppgave:
+Skriv en kort, ryddig og profesjonell tilbudstekst på norsk basert på informasjonen over.
+Avslutt med en høflig setning om at kunden gjerne kan ta kontakt ved spørsmål eller avklaringer.
 `;
 
     const response = await client.responses.create({
@@ -53,7 +68,9 @@ Avslutt med at kunden kan ta kontakt ved spørsmål.
       input: prompt
     });
 
-    const text = response.output[0].content[0].text;
+    const text =
+      response.output?.[0]?.content?.[0]?.text ||
+      "Kunne ikke generere tilbudstekst.";
 
     return res.status(200).json({ text });
 
