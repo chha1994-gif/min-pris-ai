@@ -1,11 +1,10 @@
-
-import OpenAI from "openai";
+const OpenAI = require("openai");
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -14,26 +13,19 @@ export default async function handler(req, res) {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        {
-          role: "system",
-          content: "Du er en norsk håndverker som skriver profesjonelle tilbud.",
-        },
-        {
-          role: "user",
-          content: "Skriv en kort testtekst som bekrefter at API fungerer.",
-        },
+        { role: "system", content: "Svar kun med teksten OK." },
+        { role: "user", content: "Test" },
       ],
     });
 
     return res.status(200).json({
       text: completion.choices[0].message.content,
     });
-  } catch (error) {
-    console.error("AI ERROR:", error);
-
+  } catch (err) {
+    console.error("AI CRASH:", err);
     return res.status(500).json({
-      error: "AI crashed",
-      details: error.message,
+      error: "AI failed",
+      message: err.message,
     });
   }
-}
+};
