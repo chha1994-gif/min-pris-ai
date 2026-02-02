@@ -1,174 +1,30 @@
-<!DOCTYPE html>
-<html lang="no">
-<head>
-  <meta charset="UTF-8" />
-  <title>MinPris – tilbudskalkulator</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+import OpenAI from "openai";
 
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
-    }
-    .box {
-      max-width: 700px;
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-    }
-    input, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      font-size: 16px;
-    }
-    button {
-      background: #111;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-    }
-    button:disabled {
-      background: #aaa;
-      cursor: not-allowed;
-    }
-    pre {
-      background: #eee;
-      padding: 10px;
-      white-space: pre-wrap;
-    }
-  </style>
-</head>
-
-<body>
-  <div class="box">
-    <h1>MinPris – tilbudskalkulator</h1>
-
-    <textarea id="beskrivelse" rows="4" placeholder="Beskriv jobben (f.eks. 2 dager riving + 6t maling)..."></textarea>
-
-    <input id="timepris" type="number" placeholder="Timepris (kr)" />
-    <input id="kmPerDag" type="number" placeholder="Km per dag" />
-    <input id="avfall" type="number" placeholder="Avfall (kr)" />
-    <input id="materiell" type="number" placeholder="Materiell totalt (kr)" />
-    <input id="hms" type="number" placeholder="Forbruk HMS per dag (kr)" />
-
-    <button id="beregnBtn">Beregn</button>
-    <button id="aiBtn" disabled>Generer tilbudstekst</button>
-
-    <h3>Resultat</h3>
-    <pre id="resultat"></pre>
-
-    <h3>Tilbudstekst</h3>
-    <pre id="tilbud"></pre>
-    <button id="kopierBtn" style="display:none;">Kopier tekst</button>
-  </div>
-
-<script>
-let kalkyle = null;
-
-/* ---------------- BEREGN ---------------- */
-document.getElementById("beregnBtn").onclick = () => {
-  const beskrivelse = document.getElementById("beskrivelse").value.trim();
-  const timepris = Number(document.getElementById("timepris").value);
-  const kmPerDag = Number(document.getElementById("kmPerDag").value);
-  const avfall = Number(document.getElementById("avfall").value || 0);
-  const materiell = Number(document.getElementById("materiell").value || 0);
-  const hmsPerDag = Number(document.getElementById("hms").value || 0);
-
-  if (!beskrivelse || !timepris || !kmPerDag) {
-    alert("Fyll inn beskrivelse, timepris og km per dag");
-    return;
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
-
-  // Enkel parsing av timer fra tekst (fallback)
-  const timer =
-    (beskrivelse.match(/(\d+)\s*t/gi) || [])
-      .map(x => Number(x.replace(/\D/g, "")))
-      .reduce((a,b) => a + b, 0);
-
-  const dager = Math.max(1, Math.ceil(timer / 7.5));
-  const arbeid = timer * timepris;
-  const kjøring = dager * kmPerDag * 15;
-  const hms = dager * hmsPerDag;
-
-  const total = arbeid + kjøring + avfall + materiell + hms;
-
-  kalkyle = {
-    beskrivelse,
-    timer,
-    dager,
-    timepris,
-    arbeid,
-    kjøring,
-    avfall,
-    materiell,
-    hms,
-    total
-  };
-
-  document.getElementById("resultat").textContent =
-`Dager: ${dager}
-Timer: ${timer}
-Arbeid: ${arbeid} kr
-Kjøring: ${kjøring} kr
-Avfall: ${avfall} kr
-Materiell: ${materiell} kr
-HMS: ${hms} kr
-
-TOTAL: ${total} kr`;
-
-  document.getElementById("aiBtn").disabled = false;
-};
-
-/* ---------------- AI ---------------- */
-document.getElementById("aiBtn").onclick = async () => {
-  const tilbudEl = document.getElementById("tilbud");
-  const kopiBtn = document.getElementById("kopierBtn");
-
-  tilbudEl.textContent = "Genererer tekst...";
-  kopiBtn.style.display = "none";
 
   try {
-    const res = await fetch("/api/ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(kalkyle),
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
     });
 
-    // 🔴 Viktig: backend-feil er ofte ren tekst
-    if (!res.ok) {
-      const text = await res.text();
-      tilbudEl.textContent =
-        "AI-feil:\n" + text;
-      return;
-    }
+    const completion = await client.responses.create({
+      model: "gpt-4.1-mini",
+      input: "Skriv en kort, profesjonell tilbudstekst på norsk."
+    });
 
-    const data = await res.json();
+    const text =
+      completion.output[0].content[0].text || "Ingen tekst generert";
 
-    if (!data.text) {
-      tilbudEl.textContent =
-        "AI svarte uten tekst.";
-      return;
-    }
-
-    tilbudEl.textContent = data.text;
-    kopiBtn.style.display = "block";
+    return res.status(200).json({ text });
 
   } catch (err) {
-    tilbudEl.textContent =
-      "Teknisk feil:\n" + err.message;
+    console.error("AI ERROR:", err);
+    return res.status(500).json({
+      error: "AI failed",
+      message: err.message || String(err)
+    });
   }
-};
-
-/* ---------------- KOPIER ---------------- */
-document.getElementById("kopierBtn").onclick = () => {
-  navigator.clipboard.writeText(
-    document.getElementById("tilbud").textContent
-  );
-  alert("Tekst kopiert");
-};
-</script>
-</body>
-</html>
+}
