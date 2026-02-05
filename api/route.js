@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     const { start, end } = req.body;
 
     if (!start || !end) {
-      return res.status(400).json({ error: "Start og sluttadresse mangler" });
+      return res.status(400).json({ error: "Start eller slutt mangler" });
     }
 
     const response = await fetch(
@@ -16,9 +16,8 @@ export default async function handler(req, res) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // 👇 VIKTIG: backend-key fra Vercel
           "X-Goog-Api-Key": process.env.GOOGLE_MAPS_BACKEND_KEY,
-          "X-Goog-FieldMask": "routes.distanceMeters,routes.duration"
+          "X-Goog-FieldMask": "routes.distanceMeters"
         },
         body: JSON.stringify({
           origin: { address: start },
@@ -34,15 +33,12 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Ingen rute funnet", data });
     }
 
-    const route = data.routes[0];
-
-    return res.status(200).json({
-      distanceMeters: route.distanceMeters,
-      duration: route.duration
+    res.status(200).json({
+      distanceMeters: data.routes[0].distanceMeters
     });
 
   } catch (err) {
-    console.error("Routes API error:", err);
-    return res.status(500).json({ error: "Serverfeil" });
+    console.error(err);
+    res.status(500).json({ error: "Serverfeil" });
   }
 }
