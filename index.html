@@ -51,12 +51,22 @@
       white-space:pre-wrap;
       margin-top:10px;
     }
-    .top-option {
+
+    /* Tur/retur-rad */
+    .checkbox-row {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 10px;
+      margin-top: 10px;
       font-weight: 600;
+    }
+    .checkbox-row input {
+      width: auto;
+      margin: 0;
+    }
+    .checkbox-row label {
+      margin: 0;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -65,12 +75,6 @@
 <div class="box">
 
 <h1>🏠 MinPris – tilbudskalkulator</h1>
-
-<!-- ✅ TUR / RETUR HELT ØVERST -->
-<div class="top-option">
-  <input type="checkbox" id="turRetur" checked />
-  <label for="turRetur" style="margin:0;">Tur / retur</label>
-</div>
 
 <!-- 1️⃣ ARBEIDSBESKRIVELSE -->
 <label>Arbeidsbeskrivelse</label>
@@ -84,12 +88,18 @@
 <label>Timepris (kr)</label>
 <input id="timepris" type="number" />
 
-<!-- 3️⃣ ADRESSER + KM -->
+<!-- 3️⃣ ADRESSER -->
 <label>Firmaadresse</label>
 <input id="firmaadresse" type="text" placeholder="F.eks: Storgata 1, Oslo" />
 
 <label>Kundeadresse</label>
 <input id="kundeadresse" type="text" placeholder="F.eks: Karl Johans gate 10, Oslo" />
+
+<!-- ✅ TUR / RETUR RETT UNDER KUNDEADRESSE -->
+<div class="checkbox-row">
+  <input type="checkbox" id="turRetur" checked />
+  <label for="turRetur">Tur / retur</label>
+</div>
 
 <button class="blue" onclick="beregnKm()">Beregn kilometer</button>
 
@@ -99,7 +109,7 @@
 <label>Pris per km (kr)</label>
 <input id="prisPerKm" type="number" value="15" />
 
-<!-- 4️⃣ BOMPENGER -->
+<!-- 4️⃣ BOMPENGER (MANUELL) -->
 <label>Estimerte bompenger per dag (kr)</label>
 <input id="bomPerDag" type="number" placeholder="F.eks 250" />
 
