@@ -6,10 +6,6 @@ export default async function handler(req, res) {
   try {
     const { start, end } = req.body;
 
-    if (!start || !end) {
-      return res.status(400).json({ error: "Start eller slutt mangler" });
-    }
-
     const response = await fetch(
       "https://routes.googleapis.com/directions/v2:computeRoutes",
       {
@@ -17,32 +13,28 @@ export default async function handler(req, res) {
         headers: {
           "Content-Type": "application/json",
           "X-Goog-Api-Key": process.env.GOOGLE_MAPS_BACKEND_KEY,
-          "X-Goog-FieldMask":
-            "routes.distanceMeters,routes.travelAdvisory.tollInfo"
+          "X-Goog-FieldMask": "routes.distanceMeters,routes.duration"
         },
         body: JSON.stringify({
           origin: { address: start },
           destination: { address: end },
-          travelMode: "DRIVE",
-          extraComputations: ["TOLLS"]
+          travelMode: "DRIVE"
         })
       }
     );
 
     const data = await response.json();
+
     const route = data.routes?.[0];
+    if (!route) {
+      return res.status(400).json({ error: "Ingen rute funnet" });
+    }
 
-    const distanceMeters = route?.distanceMeters || 0;
-    const tolls =
-      route?.travelAdvisory?.tollInfo?.estimatedPrice?.[0]?.units || 0;
+    const km = route.distanceMeters / 1000;
 
-    res.status(200).json({
-      distanceMeters,
-      tolls
-    });
+    res.status(200).json({ km });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Serverfeil" });
+    res.status(500).json({ error: "Feil ved beregning", details: err.message });
   }
 }
