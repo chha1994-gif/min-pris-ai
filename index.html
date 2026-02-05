@@ -3,217 +3,199 @@
 <head>
   <meta charset="UTF-8" />
   <title>🏠 MinPris – tilbudskalkulator</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Google Maps JS + Places -->
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no"
+    async
+    defer
+  ></script>
 
   <style>
     body {
-      font-family: system-ui, sans-serif;
-      background: #f4f6fb;
-      padding: 16px;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
     }
-    .box {
-      max-width: 760px;
+    .card {
+      max-width: 600px;
       margin: auto;
       background: white;
       padding: 20px;
-      border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    }
-    label {
-      font-weight: 600;
-      display: block;
-      margin-top: 14px;
-    }
-    input, textarea {
-      width: 100%;
-      padding: 12px;
-      margin-top: 6px;
       border-radius: 10px;
-      border: 1px solid #ccc;
-      font-size: 15px;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px;
+      font-size: 16px;
     }
     button {
-      width: 100%;
-      padding: 14px;
-      margin-top: 14px;
-      font-size: 15px;
-      font-weight: 600;
-      border-radius: 12px;
+      background: #4f46e5;
+      color: white;
       border: none;
+      border-radius: 6px;
       cursor: pointer;
     }
-    .dark { background:#111827; color:white; }
-    .blue { background:#2563eb; color:white; }
-    pre {
-      background:#f1f5f9;
-      padding:14px;
-      border-radius:10px;
-      white-space:pre-wrap;
-      margin-top:10px;
+    button:hover {
+      background: #4338ca;
+    }
+    .result {
+      margin-top: 15px;
+      background: #eef;
+      padding: 10px;
+      border-radius: 6px;
     }
   </style>
 </head>
-
 <body>
-<div class="box">
 
-<h1>🏠 MinPris – tilbudskalkulator</h1>
+<div class="card">
+  <h2>🏠 MinPris – tilbudskalkulator</h2>
 
-<label>Jobbbeskrivelse</label>
-<textarea id="beskrivelse" placeholder="F.eks: 40t riving, 20t rengjøring"></textarea>
+  <label>Firmaadresse</label>
+  <input id="start" placeholder="F.eks Storgata 1, Oslo" />
 
-<label>Timepris (kr)</label>
-<input id="timepris" type="number">
+  <label>Kundeadresse</label>
+  <input id="end" placeholder="F.eks Sandvika" />
 
-<label>Firmaadresse</label>
-<input id="firmaadresse" type="text">
+  <label>
+    <input type="checkbox" id="turRetur" checked />
+    Tur / retur
+  </label>
 
-<label>Kundeadresse</label>
-<input id="kundeadresse" type="text">
+  <button onclick="beregnKm()">📏 Beregn kilometer</button>
 
-<button class="blue" onclick="beregnKm()">Beregn kilometer</button>
+  <div class="result" id="kmResultat"></div>
 
-<label>
-  <input type="checkbox" id="turRetur" checked>
-  Tur / retur
-</label>
+  <hr />
 
-<label>Kilometer per dag</label>
-<input id="kmPerDag" type="number">
+  <label>Timepris (NOK)</label>
+  <input id="timepris" type="number" value="750" />
 
-<label>Pris per km (kr)</label>
-<input id="prisPerKm" type="number" value="15">
+  <label>Timer totalt</label>
+  <input id="timer" type="number" value="15" />
 
-<label>Avfall (kr)</label>
-<input id="avfall" type="number" value="0">
+  <label>Pris per km (NOK)</label>
+  <input id="kmPris" type="number" value="15" />
 
-<label>Materiell / forbruk (kr)</label>
-<input id="materiell" type="number" value="0">
+  <label>Est. bompenger per dag (NOK)</label>
+  <input id="bomPerDag" type="number" placeholder="F.eks 250" />
 
-<label>HMS-forbruk per dag (kr)</label>
-<input id="hms" type="number" value="0">
+  <label>Avfall (NOK)</label>
+  <input id="avfall" type="number" value="0" />
 
-<button class="dark" onclick="beregn()">Beregn</button>
-<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>
-  Generer tilbudstekst
-</button>
+  <label>Materiell / forbruk (NOK)</label>
+  <input id="materiell" type="number" value="0" />
 
-<h3>Resultat</h3>
-<pre id="resultat"></pre>
+  <label>HMS-forbruk per dag (NOK)</label>
+  <input id="hmsPerDag" type="number" value="0" />
 
-<h3>Tilbudstekst</h3>
-<pre id="tilbud"></pre>
+  <button onclick="genererTilbud()">🧾 Generer tilbudstekst</button>
 
+  <textarea id="tilbud" rows="14" placeholder="Tilbudstekst kommer her…"></textarea>
 </div>
 
-<!-- 🔑 FRONTEND GOOGLE MAPS KEY (Maps JS + Places) -->
-<script
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
-  async defer>
-</script>
-
 <script>
-let kalkyle = null;
-let bompenger = 0;
+let kmPerDag = 0;
+let dager = 0;
 
-/* ---------- AUTOCOMPLETE ---------- */
+// Autocomplete
 function initAutocomplete() {
-  new google.maps.places.Autocomplete(firmaadresse, {
+  new google.maps.places.Autocomplete(document.getElementById("start"), {
     componentRestrictions: { country: "no" }
   });
-  new google.maps.places.Autocomplete(kundeadresse, {
+  new google.maps.places.Autocomplete(document.getElementById("end"), {
     componentRestrictions: { country: "no" }
   });
 }
 
-/* ---------- BEREGN KM + BOM ---------- */
-async function beregnKm() {
-  const fra = firmaadresse.value;
-  const til = kundeadresse.value;
+window.initAutocomplete = initAutocomplete;
+setTimeout(initAutocomplete, 1000);
 
-  if (!fra || !til) {
-    alert("Fyll inn begge adresser");
-    return;
-  }
+// Beregn km via backend
+async function beregnKm() {
+  const start = document.getElementById("start").value;
+  const end = document.getElementById("end").value;
+  const turRetur = document.getElementById("turRetur").checked;
 
   const res = await fetch("/api/route", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ start: fra, end: til })
+    body: JSON.stringify({ start, end })
   });
 
   const data = await res.json();
 
-  let km = data.distanceMeters / 1000;
-  if (turRetur.checked) km *= 2;
+  let km = data.km;
+  if (turRetur) km *= 2;
 
-  kmPerDag.value = km.toFixed(1);
-  bompenger = data.tolls || 0;
+  kmPerDag = km;
+  document.getElementById("kmResultat").innerText =
+    Avstand per dag: ${km.toFixed(1)} km;
 }
 
-/* ---------- BEREGN TOTAL ---------- */
-function beregn() {
-  const timer =
-    (beskrivelse.value.match(/(\d+)\s*t/gi) || [])
-      .map(x => Number(x.replace(/\D/g,"")))
-      .reduce((a,b)=>a+b,0);
+// Generer tilbud
+function genererTilbud() {
+  const timepris = +timeprisInput.value;
+  const timer = +timerInput.value;
+  const kmPris = +kmPrisInput.value;
+  const bomPerDag = +bomPerDagInput.value || 0;
+  const avfall = +avfallInput.value;
+  const materiell = +materiellInput.value;
+  const hmsPerDag = +hmsPerDagInput.value;
 
-  const dager = Math.max(1, Math.ceil(timer / 7.5));
+  dager = Math.ceil(timer / 7.5);
 
-  const arbeid = timer * Number(timepris.value||0);
-  const kjøring = dager * Number(kmPerDag.value||0) * Number(prisPerKm.value||0);
-  const hmsTot = dager * Number(hms.value||0);
-  const avf = Number(avfall.value||0);
-  const mat = Number(materiell.value||0);
+  const arbeid = timer * timepris;
+  const kjøring = kmPerDag * kmPris * dager;
+  const bom = bomPerDag * dager;
+  const hms = hmsPerDag * dager;
 
-  const totalEks = arbeid + kjøring + hmsTot + avf + mat + bompenger;
-  const mva = totalEks * 0.25;
-  const totalInk = totalEks + mva;
+  const total = arbeid + kjøring + bom + hms + avfall + materiell;
+  const mva = total * 0.25;
 
-  kalkyle = {
-    beskrivelse: beskrivelse.value,
-    timer, dager,
-    arbeid, kjøring,
-    avfall: avf,
-    materiell: mat,
-    hms: hmsTot,
-    bompenger,
-    totalEksMva: totalEks,
-    totalInkMva: totalInk,
-    timepris: Number(timepris.value),
-    kmPerDag: Number(kmPerDag.value)
-  };
+  tilbud.value = `
+Tilbud – estimert pris
 
-  resultat.textContent =
-`Timer: ${timer}
-Dager: ${dager}
+Arbeid:
+– ${timer} timer × ${timepris} kr = ${arbeid.toFixed(0)} kr
 
-Arbeid: ${arbeid} kr
-Kjøring: ${kjøring} kr
-Bompenger: ${bompenger} kr
-Avfall: ${avf} kr
-Materiell: ${mat} kr
-HMS: ${hmsTot} kr
+Kjøring:
+– ${kmPerDag.toFixed(1)} km per dag
+– ${dager} dager
+– ${kmPris} kr/km
+= ${kjøring.toFixed(0)} kr
 
-Totalt eks. mva: ${Math.round(totalEks)} kr
-Totalt inkl. mva: ${Math.round(totalInk)} kr`;
+Estimerte bompenger:
+– ${bomPerDag} kr per dag × ${dager} dager
+= ${bom.toFixed(0)} kr
 
-  aiBtn.disabled = false;
+HMS-forbruk:
+– ${hmsPerDag} kr per dag × ${dager} dager
+= ${hms.toFixed(0)} kr
+
+Avfall: ${avfall} kr  
+Materiell/forbruk: ${materiell} kr  
+
+Sum eks. mva: ${total.toFixed(0)} kr  
+Mva (25%): ${mva.toFixed(0)} kr  
+
+Sum inkl. mva: ${(total + mva).toFixed(0)} kr
+
+Merk:
+Tilbudet er basert på estimerte mengder og kan justeres ved endringer i omfang.
+`;
 }
 
-/* ---------- AI ---------- */
-async function genererTilbud() {
-  tilbud.textContent = "Genererer tilbudstekst…";
-
-  const res = await fetch("/api/ai", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(kalkyle)
-  });
-
-  const data = await res.json();
-  tilbud.textContent = data.text || "Ingen tekst returnert";
-}
+// Shortcuts
+const timeprisInput = document.getElementById("timepris");
+const timerInput = document.getElementById("timer");
+const kmPrisInput = document.getElementById("kmPris");
+const bomPerDagInput = document.getElementById("bomPerDag");
+const avfallInput = document.getElementById("avfall");
+const materiellInput = document.getElementById("materiell");
+const hmsPerDagInput = document.getElementById("hmsPerDag");
 </script>
 
 </body>
