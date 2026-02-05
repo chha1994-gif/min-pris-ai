@@ -78,20 +78,20 @@
       }
     }
 
-    .buttons {
-      display: flex;
-      gap: 12px;
-      margin-top: 24px;
-    }
-
     button {
-      flex: 1;
+      width: 100%;
       padding: 14px;
       font-size: 15px;
       font-weight: 600;
       border-radius: 12px;
       border: none;
       cursor: pointer;
+      margin-top: 12px;
+    }
+
+    #hentKmBtn {
+      background: var(--primary);
+      color: white;
     }
 
     #beregnBtn {
@@ -100,13 +100,14 @@
     }
 
     #aiBtn {
-      background: var(--primary);
+      background: var(--success);
       color: white;
+      opacity: 0.5;
     }
 
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    #aiBtn.enabled {
+      opacity: 1;
+      cursor: pointer;
     }
 
     pre {
@@ -135,19 +136,21 @@
   <label>Timepris (kr)</label>
   <input id="timepris" type="number" />
 
-  <!-- NYTT: ADRESSER -->
   <label>Firmaadresse</label>
   <input id="firmaAdresse" placeholder="F.eks: Storgata 1, Oslo" />
 
   <label>Kundeadresse</label>
   <input id="kundeAdresse" placeholder="F.eks: Karl Johans gate 10, Oslo" />
 
+  <!-- VIKTIG: type="button" -->
   <button type="button" id="hentKmBtn">Beregn avstand automatisk</button>
 
-  <label>
-    <input type="checkbox" id="turRetur" checked />
-    Tur / retur
-  </label>
+  <div style="margin:12px 0;">
+    <label style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" id="turRetur" checked />
+      Tur / retur
+    </label>
+  </div>
 
   <div class="grid-2">
     <div>
@@ -169,13 +172,12 @@
   <label>Forbruk HMS per dag (kr)</label>
   <input id="hms" type="number" />
 
-  <div class="buttons">
-    <button id="beregnBtn">Beregn</button>
-    <button id="aiBtn" disabled>Generer tilbudstekst</button>
-  </div>
+  <button type="button" id="beregnBtn">Beregn</button>
 
   <h3>Resultat</h3>
   <pre id="resultat"></pre>
+
+  <button type="button" id="aiBtn">Generer tilbudstekst</button>
 
   <h3>Tilbudstekst</h3>
   <pre id="tilbud"></pre>
@@ -185,6 +187,9 @@
 <script>
 let kalkyle = null;
 let tollPerDag = 0;
+
+// SIKKERHET: hindre submit
+document.addEventListener("submit", e => e.preventDefault());
 
 document.getElementById("hentKmBtn").onclick = async () => {
   const start = document.getElementById("firmaAdresse").value;
@@ -227,6 +232,11 @@ document.getElementById("beregnBtn").onclick = () => {
   const materiell = Number(document.getElementById("materiell").value || 0);
   const hmsPerDag = Number(document.getElementById("hms").value || 0);
 
+  if (!beskrivelse || !timepris || !kmPerDag) {
+    alert("Fyll inn jobbbeskrivelse, timepris og kilometer");
+    return;
+  }
+
   const timer =
     (beskrivelse.match(/(\d+)\s*t/gi) || [])
       .map(x => Number(x.replace(/\D/g, "")))
@@ -238,8 +248,7 @@ document.getElementById("beregnBtn").onclick = () => {
   const hms = dager * hmsPerDag;
 
   const totalEksMva = arbeid + kjøring + avfall + materiell + hms;
-  const mva = totalEksMva * 0.25;
-  const totalInkMva = totalEksMva + mva;
+  const totalInkMva = totalEksMva * 1.25;
 
   kalkyle = {
     beskrivelse,
@@ -269,10 +278,12 @@ HMS: ${hms} kr
 Totalt eks. mva: ${Math.round(totalEksMva)} kr
 Totalt inkl. mva: ${Math.round(totalInkMva)} kr`;
 
-  document.getElementById("aiBtn").disabled = false;
+  document.getElementById("aiBtn").classList.add("enabled");
 };
 
 document.getElementById("aiBtn").onclick = async () => {
+  if (!kalkyle) return;
+
   const res = await fetch("/api/ai", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
