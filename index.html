@@ -1,299 +1,179 @@
+
 <!DOCTYPE html>
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
-  <title>🏠 MinPris – tilbudskalkulator</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MinPris – tilbudskalkulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
-    :root {
-      --bg: #f8fafc;
-      --card: #ffffff;
-      --primary: #2563eb;
-      --dark: #0f172a;
-      --muted: #64748b;
-      --success: #16a34a;
-    }
-
     body {
-      margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: linear-gradient(135deg, #eef2ff, #f8fafc);
-      padding: 16px;
-      color: var(--dark);
-    }
-
-    .box {
-      max-width: 760px;
-      margin: auto;
-      background: var(--card);
+      background: #f5f7fa;
       padding: 20px;
-      border-radius: 16px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.08);
     }
 
-    .header {
-      text-align: center;
-      margin-bottom: 24px;
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
     }
 
     h1 {
-      margin-bottom: 6px;
-      font-size: 1.6rem;
-    }
-
-    .subtitle {
-      color: var(--muted);
-      margin-top: 0;
+      margin-bottom: 4px;
     }
 
     label {
-      font-weight: 600;
-      margin-top: 14px;
       display: block;
+      margin-top: 16px;
+      font-weight: 600;
     }
 
     input, textarea {
       width: 100%;
       padding: 12px;
-      font-size: 15px;
-      border-radius: 10px;
-      border: 1px solid #cbd5f5;
       margin-top: 6px;
-    }
-
-    textarea {
-      resize: vertical;
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    @media (max-width: 600px) {
-      .grid-2 {
-        grid-template-columns: 1fr;
-      }
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
     }
 
     button {
-      width: 100%;
+      margin-top: 18px;
       padding: 14px;
-      font-size: 15px;
-      font-weight: 600;
-      border-radius: 12px;
+      width: 100%;
+      font-size: 16px;
+      border-radius: 10px;
       border: none;
       cursor: pointer;
+      background: #2563eb;
+      color: white;
+      font-weight: 600;
+    }
+
+    .row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
       margin-top: 12px;
     }
 
-    #hentKmBtn {
-      background: var(--primary);
-      color: white;
+    .row input[type="checkbox"] {
+      width: auto;
+      margin-right: 6px;
     }
 
-    #beregnBtn {
-      background: var(--dark);
-      color: white;
-    }
-
-    #aiBtn {
-      background: var(--success);
-      color: white;
-      opacity: 0.5;
-    }
-
-    #aiBtn.enabled {
-      opacity: 1;
-      cursor: pointer;
-    }
-
-    pre {
-      background: #f1f5f9;
-      padding: 16px;
-      border-radius: 12px;
-      white-space: pre-wrap;
+    .info {
       margin-top: 10px;
-      line-height: 1.6;
-      font-size: 15px;
+      font-weight: 600;
     }
   </style>
 </head>
 
 <body>
-<div class="box">
-
-  <div class="header">
+  <div class="container">
     <h1>🏠 MinPris – tilbudskalkulator</h1>
-    <p class="subtitle">Kalkuler pris og generer profesjonell tilbudstekst</p>
-  </div>
+    <p>Kalkuler kjøring automatisk med Google Maps</p>
 
-  <label>Jobbbeskrivelse</label>
-  <textarea id="beskrivelse" rows="4" placeholder="F.eks: 40t riving, 20t rengjøring"></textarea>
+    <label>Jobbbeskrivelse</label>
+    <textarea placeholder="F.eks: 40t riving, 20t rengjøring"></textarea>
 
-  <label>Timepris (kr)</label>
-  <input id="timepris" type="number" />
+    <label>Timepris (kr)</label>
+    <input type="number" />
 
-  <label>Firmaadresse</label>
-  <input id="firmaAdresse" placeholder="F.eks: Storgata 1, Oslo" />
+    <label>Firmaadresse</label>
+    <input id="fromAddress" placeholder="F.eks: Storgata 1, Oslo" />
 
-  <label>Kundeadresse</label>
-  <input id="kundeAdresse" placeholder="F.eks: Karl Johans gate 10, Oslo" />
+    <label>Kundeadresse</label>
+    <input id="toAddress" placeholder="F.eks: Karl Johans gate 10, Oslo" />
 
-  <!-- VIKTIG: type="button" -->
-  <button type="button" id="hentKmBtn">Beregn avstand automatisk</button>
+    <button onclick="calculateDistance()">Beregn avstand automatisk</button>
 
-  <div style="margin:12px 0;">
-    <label style="display:flex; align-items:center; gap:8px;">
-      <input type="checkbox" id="turRetur" checked />
-      Tur / retur
-    </label>
-  </div>
-
-  <div class="grid-2">
-    <div>
-      <label>Kilometer per dag</label>
-      <input id="kmPerDag" type="number" />
+    <div class="row">
+      <input type="checkbox" id="roundTrip" checked />
+      <label for="roundTrip">Tur / retur</label>
     </div>
-    <div>
-      <label>Pris per km (kr)</label>
-      <input id="prisPerKm" type="number" value="15" />
-    </div>
+
+    <label>Kilometer per dag</label>
+    <input id="kmPerDag" type="number" />
+
+    <label>Pris per km (kr)</label>
+    <input value="15" type="number" />
+
+    <div class="info" id="distanceInfo"></div>
   </div>
 
-  <label>Avfall (kr)</label>
-  <input id="avfall" type="number" />
+  <!-- Google Maps -->
+  <script>
+    let autocompleteFrom;
+    let autocompleteTo;
 
-  <label>Materiell totalt (kr)</label>
-  <input id="materiell" type="number" />
+    function initAutocomplete() {
+      autocompleteFrom = new google.maps.places.Autocomplete(
+        document.getElementById("fromAddress"),
+        { types: ["geocode"], componentRestrictions: { country: "no" } }
+      );
 
-  <label>Forbruk HMS per dag (kr)</label>
-  <input id="hms" type="number" />
+      autocompleteTo = new google.maps.places.Autocomplete(
+        document.getElementById("toAddress"),
+        { types: ["geocode"], componentRestrictions: { country: "no" } }
+      );
+    }
 
-  <button type="button" id="beregnBtn">Beregn</button>
+    async function calculateDistance() {
+      const origin = document.getElementById("fromAddress").value;
+      const destination = document.getElementById("toAddress").value;
+      const roundTrip = document.getElementById("roundTrip").checked;
 
-  <h3>Resultat</h3>
-  <pre id="resultat"></pre>
+      if (!origin || !destination) {
+        alert("Fyll inn begge adresser");
+        return;
+      }
 
-  <button type="button" id="aiBtn">Generer tilbudstekst</button>
+      const response = await fetch(
+        https://routes.googleapis.com/directions/v2:computeRoutes,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": "DIN_GOOGLE_MAPS_API_KEY",
+            "X-Goog-FieldMask": "routes.distanceMeters"
+          },
+          body: JSON.stringify({
+            origin: { address: origin },
+            destination: { address: destination },
+            travelMode: "DRIVE"
+          })
+        }
+      );
 
-  <h3>Tilbudstekst</h3>
-  <pre id="tilbud"></pre>
+      const data = await response.json();
 
-</div>
+      if (!data.routes || !data.routes[0]) {
+        alert("Kunne ikke beregne avstand");
+        return;
+      }
 
-<script>
-let kalkyle = null;
-let tollPerDag = 0;
+      let meters = data.routes[0].distanceMeters;
+      let km = meters / 1000;
 
-// SIKKERHET: hindre submit
-document.addEventListener("submit", e => e.preventDefault());
+      if (roundTrip) km *= 2;
 
-document.getElementById("hentKmBtn").onclick = async () => {
-  const start = document.getElementById("firmaAdresse").value;
-  const end = document.getElementById("kundeAdresse").value;
-  const turRetur = document.getElementById("turRetur").checked;
+      km = Math.round(km * 10) / 10;
 
-  if (!start || !end) {
-    alert("Fyll inn både firmaadresse og kundeadresse");
-    return;
-  }
+      document.getElementById("kmPerDag").value = km;
+      document.getElementById("distanceInfo").innerText =
+        Avstand beregnet: ${km} km ${roundTrip ? "(tur/retur)" : "(én vei)"};
+    }
+  </script>
 
-  const res = await fetch("/api/route", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ start, end })
-  });
-
-  const data = await res.json();
-
-  let km = data.km;
-  let toll = data.toll || 0;
-
-  if (turRetur) {
-    km *= 2;
-    toll *= 2;
-  }
-
-  tollPerDag = toll;
-  document.getElementById("kmPerDag").value = km;
-
-  alert(Avstand funnet:\n${km} km\nBompenger ca: ${toll} kr);
-};
-
-document.getElementById("beregnBtn").onclick = () => {
-  const beskrivelse = document.getElementById("beskrivelse").value;
-  const timepris = Number(document.getElementById("timepris").value);
-  const kmPerDag = Number(document.getElementById("kmPerDag").value);
-  const prisPerKm = Number(document.getElementById("prisPerKm").value || 15);
-  const avfall = Number(document.getElementById("avfall").value || 0);
-  const materiell = Number(document.getElementById("materiell").value || 0);
-  const hmsPerDag = Number(document.getElementById("hms").value || 0);
-
-  if (!beskrivelse || !timepris || !kmPerDag) {
-    alert("Fyll inn jobbbeskrivelse, timepris og kilometer");
-    return;
-  }
-
-  const timer =
-    (beskrivelse.match(/(\d+)\s*t/gi) || [])
-      .map(x => Number(x.replace(/\D/g, "")))
-      .reduce((a,b) => a + b, 0);
-
-  const dager = Math.max(1, Math.ceil(timer / 7.5));
-  const arbeid = timer * timepris;
-  const kjøring = dager * (kmPerDag * prisPerKm + tollPerDag);
-  const hms = dager * hmsPerDag;
-
-  const totalEksMva = arbeid + kjøring + avfall + materiell + hms;
-  const totalInkMva = totalEksMva * 1.25;
-
-  kalkyle = {
-    beskrivelse,
-    timer,
-    dager,
-    arbeid,
-    kjøring,
-    avfall,
-    materiell,
-    hms,
-    totalEksMva,
-    totalInkMva,
-    timepris,
-    kmPerDag
-  };
-
-  document.getElementById("resultat").textContent =
-`Timer: ${timer}
-Dager: ${dager}
-
-Arbeid: ${arbeid} kr
-Kjøring: ${kjøring} kr
-Avfall: ${avfall} kr
-Materiell: ${materiell} kr
-HMS: ${hms} kr
-
-Totalt eks. mva: ${Math.round(totalEksMva)} kr
-Totalt inkl. mva: ${Math.round(totalInkMva)} kr`;
-
-  document.getElementById("aiBtn").classList.add("enabled");
-};
-
-document.getElementById("aiBtn").onclick = async () => {
-  if (!kalkyle) return;
-
-  const res = await fetch("/api/ai", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(kalkyle)
-  });
-
-  const data = await res.json();
-  document.getElementById("tilbud").textContent = data.text;
-};
-</script>
-
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=DIN_GOOGLE_MAPS_API_KEY&libraries=places&callback=initAutocomplete"
+    async
+    defer
+  ></script>
 </body>
 </html>
