@@ -114,6 +114,7 @@
 
 <script>
 let kalkyle = null;
+let bompenger = 0;
 
 /* ---------- AUTOCOMPLETE ---------- */
 function initAutocomplete() {
@@ -125,7 +126,7 @@ function initAutocomplete() {
   });
 }
 
-/* ---------- BEREGN KM (TUR/RETUR HER) ---------- */
+/* ---------- BEREGN KM + BOM ---------- */
 async function beregnKm() {
   const fra = firmaadresse.value;
   const til = kundeadresse.value;
@@ -144,12 +145,10 @@ async function beregnKm() {
   const data = await res.json();
 
   let km = data.distanceMeters / 1000;
-
-  if (turRetur.checked) {
-    km = km * 2;
-  }
+  if (turRetur.checked) km *= 2;
 
   kmPerDag.value = km.toFixed(1);
+  bompenger = data.tolls || 0;
 }
 
 /* ---------- BEREGN TOTAL ---------- */
@@ -167,7 +166,7 @@ function beregn() {
   const avf = Number(avfall.value||0);
   const mat = Number(materiell.value||0);
 
-  const totalEks = arbeid + kjøring + hmsTot + avf + mat;
+  const totalEks = arbeid + kjøring + hmsTot + avf + mat + bompenger;
   const mva = totalEks * 0.25;
   const totalInk = totalEks + mva;
 
@@ -178,6 +177,7 @@ function beregn() {
     avfall: avf,
     materiell: mat,
     hms: hmsTot,
+    bompenger,
     totalEksMva: totalEks,
     totalInkMva: totalInk,
     timepris: Number(timepris.value),
@@ -190,6 +190,7 @@ Dager: ${dager}
 
 Arbeid: ${arbeid} kr
 Kjøring: ${kjøring} kr
+Bompenger: ${bompenger} kr
 Avfall: ${avf} kr
 Materiell: ${mat} kr
 HMS: ${hmsTot} kr
