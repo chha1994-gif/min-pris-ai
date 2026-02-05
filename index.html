@@ -2,189 +2,206 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>🏠 MinPris – tilbudskalkulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #f6f7fb;
-      margin: 0;
-      padding: 20px;
+      font-family: system-ui, sans-serif;
+      background: #f4f6fb;
+      padding: 16px;
     }
-
-    .container {
-      max-width: 700px;
+    .box {
+      max-width: 760px;
       margin: auto;
-      background: #fff;
+      background: white;
       padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0,0,0,.08);
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
     label {
-      display: block;
-      margin-top: 15px;
       font-weight: 600;
+      display: block;
+      margin-top: 14px;
     }
-
     input, textarea {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       margin-top: 6px;
-      border-radius: 8px;
+      border-radius: 10px;
       border: 1px solid #ccc;
-      font-size: 16px;
+      font-size: 15px;
     }
-
     button {
-      margin-top: 20px;
       width: 100%;
       padding: 14px;
-      font-size: 18px;
+      margin-top: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 12px;
       border: none;
-      border-radius: 10px;
-      background: #4f46e5;
-      color: white;
       cursor: pointer;
     }
-
-    button:hover {
-      background: #4338ca;
-    }
-
-    .result {
-      margin-top: 20px;
-      background: #f1f5f9;
-      padding: 15px;
-      border-radius: 8px;
-      white-space: pre-wrap;
+    .dark { background:#111827; color:white; }
+    .blue { background:#2563eb; color:white; }
+    pre {
+      background:#f1f5f9;
+      padding:14px;
+      border-radius:10px;
+      white-space:pre-wrap;
+      margin-top:10px;
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <h1>🏠 MinPris – tilbudskalkulator</h1>
+<div class="box">
 
-    <label>Jobbbeskrivelse</label>
-    <textarea id="description" rows="4" placeholder="F.eks: Male stue og kjøkken, montere lister..."></textarea>
+<h1>🏠 MinPris – tilbudskalkulator</h1>
 
-    <label>Timepris (kr)</label>
-    <input id="hourlyRate" type="number" value="750">
+<label>Jobbbeskrivelse</label>
+<textarea id="beskrivelse" placeholder="F.eks: 40t riving, 20t rengjøring"></textarea>
 
-    <label>Startadresse</label>
-    <input id="start" placeholder="Firmaadresse">
+<label>Timepris (kr)</label>
+<input id="timepris" type="number">
 
-    <label>Sluttadresse</label>
-    <input id="end" placeholder="Kundeadresse">
+<label>Firmaadresse</label>
+<input id="firmaadresse" type="text">
 
-    <label>Avfall (kr)</label>
-    <input id="waste" type="number" value="0">
+<label>Kundeadresse</label>
+<input id="kundeadresse" type="text">
 
-    <label>Materialer / forbruk (kr)</label>
-    <input id="materials" type="number" value="0">
+<button class="blue" onclick="beregnKm()">Beregn kilometer</button>
 
-    <label>HMS-forbruk per dag (kr)</label>
-    <input id="hmsPerDay" type="number" value="0">
+<label>
+  <input type="checkbox" id="turRetur" checked>
+  Tur / retur
+</label>
 
-    <button onclick="calculate()">Beregn tilbud</button>
+<label>Kilometer per dag</label>
+<input id="kmPerDag" type="number">
 
-    <div id="output" class="result"></div>
-  </div>
+<label>Pris per km (kr)</label>
+<input id="prisPerKm" type="number" value="15">
 
-  <!-- ============================= -->
-  <!-- ✅ GOOGLE MAPS FRONTEND KEY   -->
-  <!-- 🔑 BYTT UT FRONTEND_KEY_HER  -->
-  <!-- ============================= -->
-  <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o=places&language=no"
-    async
-    defer
-  ></script>
+<label>Avfall (kr)</label>
+<input id="avfall" type="number" value="0">
 
-  <script>
-    let startAutocomplete;
-    let endAutocomplete;
+<label>Materiell / forbruk (kr)</label>
+<input id="materiell" type="number" value="0">
 
-    function initAutocomplete() {
-      if (!window.google || !google.maps.places) {
-        console.error("Google Places ikke lastet");
-        return;
-      }
+<label>HMS-forbruk per dag (kr)</label>
+<input id="hms" type="number" value="0">
 
-      startAutocomplete = new google.maps.places.Autocomplete(
-        document.getElementById("start"),
-        { types: ["geocode"] }
-      );
+<button class="dark" onclick="beregn()">Beregn</button>
+<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>Generer tilbudstekst</button>
 
-      endAutocomplete = new google.maps.places.Autocomplete(
-        document.getElementById("end"),
-        { types: ["geocode"] }
-      );
-    }
+<h3>Resultat</h3>
+<pre id="resultat"></pre>
 
-    window.addEventListener("load", () => {
-      setTimeout(initAutocomplete, 500);
-    });
+<h3>Tilbudstekst</h3>
+<pre id="tilbud"></pre>
 
-    async function calculate() {
-      const start = document.getElementById("start").value;
-      const end = document.getElementById("end").value;
+</div>
 
-      const hourlyRate = Number(document.getElementById("hourlyRate").value);
-      const waste = Number(document.getElementById("waste").value);
-      const materials = Number(document.getElementById("materials").value);
-      const hmsPerDay = Number(document.getElementById("hmsPerDay").value);
+<!-- 🔑 FRONTEND GOOGLE KEY – KUN MAPS + PLACES -->
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o=places&language=no"
+  async defer>
+</script>
 
-      if (!start || !end) {
-        alert("Fyll inn start- og sluttadresse");
-        return;
-      }
+<script>
+let kalkyle = null;
 
-      const res = await fetch("/api/route", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ start, end })
-      });
+/* ---------- AUTOCOMPLETE ---------- */
+window.addEventListener("load", () => {
+  new google.maps.places.Autocomplete(firmaadresse, { componentRestrictions:{country:"no"}});
+  new google.maps.places.Autocomplete(kundeadresse, { componentRestrictions:{country:"no"}});
+});
 
-      const data = await res.json();
+/* ---------- BEREGN KM (BACKEND) ---------- */
+async function beregnKm() {
+  const fra = firmaadresse.value;
+  const til = kundeadresse.value;
 
-      if (!data.distanceKm) {
-        alert("Kunne ikke beregne avstand");
-        return;
-      }
+  if (!fra || !til) {
+    alert("Fyll inn begge adresser");
+    return;
+  }
 
-      const hours = 8; // midlertidig fast (AI gjør dette senere)
-      const days = Math.ceil(hours / 7.5);
+  const res = await fetch("/api/route", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      start: fra,
+      end: til,
+      turRetur: turRetur.checked
+    })
+  });
 
-      const labor = hours * hourlyRate;
-      const driving = data.distanceKm * 15 * days;
-      const hms = hmsPerDay * days;
+  const data = await res.json();
+  kmPerDag.value = (data.distanceMeters / 1000).toFixed(1);
+}
 
-      const total = labor + driving + waste + materials + hms;
-      const vat = total * 0.25;
+/* ---------- BEREGN TOTAL ---------- */
+function beregn() {
+  const timer =
+    (beskrivelse.value.match(/(\d+)\s*t/gi) || [])
+      .map(x => Number(x.replace(/\D/g,"")))
+      .reduce((a,b)=>a+b,0);
 
-      document.getElementById("output").textContent = `
-Avstand: ${data.distanceKm} km
-Arbeid: ${hours} t (${days} dager)
+  const dager = Math.max(1, Math.ceil(timer / 7.5));
 
-Arbeid: ${labor.toFixed(0)} kr
-Kjøring: ${driving.toFixed(0)} kr
-Avfall: ${waste} kr
-Materialer: ${materials} kr
-HMS: ${hms} kr
+  const arbeid = timer * Number(timepris.value||0);
+  const kjøring = dager * Number(kmPerDag.value||0) * Number(prisPerKm.value||0);
+  const hmsTot = dager * Number(hms.value||0);
+  const avf = Number(avfall.value||0);
+  const mat = Number(materiell.value||0);
 
-SUM eks. mva: ${total.toFixed(0)} kr
-MVA (25%): ${vat.toFixed(0)} kr
-SUM inkl. mva: ${(total + vat).toFixed(0)} kr
-`;
-    }
-  </script>
+  const totalEks = arbeid + kjøring + hmsTot + avf + mat;
+  const mva = totalEks * 0.25;
+  const totalInk = totalEks + mva;
+
+  kalkyle = {
+    beskrivelse: beskrivelse.value,
+    timer, dager, arbeid, kjøring,
+    avfall: avf, materiell: mat, hms: hmsTot,
+    totalEksMva: totalEks,
+    totalInkMva: totalInk,
+    timepris: Number(timepris.value),
+    kmPerDag: Number(kmPerDag.value)
+  };
+
+  resultat.textContent =
+`Timer: ${timer}
+Dager: ${dager}
+
+Arbeid: ${arbeid} kr
+Kjøring: ${kjøring} kr
+Avfall: ${avf} kr
+Materiell: ${mat} kr
+HMS: ${hmsTot} kr
+
+Totalt eks. mva: ${Math.round(totalEks)} kr
+Totalt inkl. mva: ${Math.round(totalInk)} kr`;
+
+  aiBtn.disabled = false;
+}
+
+/* ---------- AI ---------- */
+async function genererTilbud() {
+  tilbud.textContent = "Genererer tilbudstekst…";
+
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(kalkyle)
+  });
+
+  const data = await res.json();
+  tilbud.textContent = data.text || "Ingen tekst returnert";
+}
+</script>
+
 </body>
 </html>
