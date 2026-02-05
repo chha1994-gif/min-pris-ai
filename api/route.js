@@ -1,12 +1,14 @@
 export default async function handler(req, res) {
-
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-
     const { start, end } = req.body;
+
+    if (!start || !end) {
+      return res.status(400).json({ error: "Start og sluttadresse mangler" });
+    }
 
     const response = await fetch(
       "https://routes.googleapis.com/directions/v2:computeRoutes",
@@ -14,39 +16,33 @@ export default async function handler(req, res) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Goog-Api-Key": process.env.GOOGLE_MAPS_API_KEY,
-          "X-Goog-FieldMask":
-            "routes.distanceMeters,routes.duration,routes.travelAdvisory.tollInfo"
+          // 👇 VIKTIG: backend-key fra Vercel
+          "X-Goog-Api-Key": process.env.GOOGLE_MAPS_BACKEND_KEY,
+          "X-Goog-FieldMask": "routes.distanceMeters,routes.duration"
         },
         body: JSON.stringify({
           origin: { address: start },
           destination: { address: end },
-          travelMode: "DRIVE",
-          extraComputations: ["TOLLS"]
+          travelMode: "DRIVE"
         })
       }
     );
 
     const data = await response.json();
-    const route = data.routes?.[0];
 
-    const km = route.distanceMeters / 1000;
-
-    let toll = 0;
-
-    if (route.travelAdvisory?.tollInfo?.estimatedPrice?.length) {
-      toll = Number(route.travelAdvisory.tollInfo.estimatedPrice[0].units || 0);
+    if (!data.routes || !data.routes.length) {
+      return res.status(500).json({ error: "Ingen rute funnet", data });
     }
 
+    const route = data.routes[0];
+
     return res.status(200).json({
-      km: Math.round(km * 10) / 10,
-      toll
+      distanceMeters: route.distanceMeters,
+      duration: route.duration
     });
 
   } catch (err) {
-
-    return res.status(500).json({
-      error: err.message
-    });
+    console.error("Routes API error:", err);
+    return res.status(500).json({ error: "Serverfeil" });
   }
 }
