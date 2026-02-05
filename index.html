@@ -78,17 +78,6 @@
       }
     }
 
-    .maps-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 6px;
-      font-size: 13px;
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 500;
-    }
-
     .buttons {
       display: flex;
       gap: 12px;
@@ -129,71 +118,105 @@
       line-height: 1.6;
       font-size: 15px;
     }
-
-    #kopierBtn {
-      margin-top: 10px;
-      background: var(--success);
-      color: white;
-      width: 100%;
-    }
   </style>
 </head>
 
 <body>
-  <div class="box">
+<div class="box">
 
-    <div class="header">
-      <h1>🏠 MinPris – tilbudskalkulator</h1>
-      <p class="subtitle">Kalkuler pris og generer profesjonell tilbudstekst</p>
-    </div>
-
-    <label>Jobbbeskrivelse</label>
-    <textarea id="beskrivelse" rows="4" placeholder="Beskriv jobben, f.eks: 40t riving, 20t rengjøring"></textarea>
-
-    <label>Timepris (kr)</label>
-    <input id="timepris" type="number" />
-
-    <div class="grid-2">
-      <div>
-        <label>Kilometer per dag</label>
-        <input id="kmPerDag" type="number" />
-
-        <a href="https://www.google.com/maps" target="_blank" class="maps-link">
-          🗺️ Usikker? Sjekk Google Maps
-        </a>
-      </div>
-
-      <div>
-        <label>Pris per km (kr)</label>
-        <input id="prisPerKm" type="number" value="15" />
-      </div>
-    </div>
-
-    <label>Avfall (kr)</label>
-    <input id="avfall" type="number" />
-
-    <label>Materiell totalt (kr)</label>
-    <input id="materiell" type="number" />
-
-    <label>Forbruk HMS per dag (kr)</label>
-    <input id="hms" type="number" />
-
-    <div class="buttons">
-      <button id="beregnBtn">Beregn</button>
-      <button id="aiBtn" disabled>Generer tilbudstekst</button>
-    </div>
-
-    <h3>Resultat</h3>
-    <pre id="resultat"></pre>
-
-    <h3>Tilbudstekst</h3>
-    <pre id="tilbud"></pre>
-    <button id="kopierBtn" style="display:none;">Kopier tekst</button>
-
+  <div class="header">
+    <h1>🏠 MinPris – tilbudskalkulator</h1>
+    <p class="subtitle">Kalkuler pris og generer profesjonell tilbudstekst</p>
   </div>
+
+  <label>Jobbbeskrivelse</label>
+  <textarea id="beskrivelse" rows="4" placeholder="F.eks: 40t riving, 20t rengjøring"></textarea>
+
+  <label>Timepris (kr)</label>
+  <input id="timepris" type="number" />
+
+  <!-- NYTT: ADRESSER -->
+  <label>Firmaadresse</label>
+  <input id="firmaAdresse" placeholder="F.eks: Storgata 1, Oslo" />
+
+  <label>Kundeadresse</label>
+  <input id="kundeAdresse" placeholder="F.eks: Karl Johans gate 10, Oslo" />
+
+  <button type="button" id="hentKmBtn">Beregn avstand automatisk</button>
+
+  <label>
+    <input type="checkbox" id="turRetur" checked />
+    Tur / retur
+  </label>
+
+  <div class="grid-2">
+    <div>
+      <label>Kilometer per dag</label>
+      <input id="kmPerDag" type="number" />
+    </div>
+    <div>
+      <label>Pris per km (kr)</label>
+      <input id="prisPerKm" type="number" value="15" />
+    </div>
+  </div>
+
+  <label>Avfall (kr)</label>
+  <input id="avfall" type="number" />
+
+  <label>Materiell totalt (kr)</label>
+  <input id="materiell" type="number" />
+
+  <label>Forbruk HMS per dag (kr)</label>
+  <input id="hms" type="number" />
+
+  <div class="buttons">
+    <button id="beregnBtn">Beregn</button>
+    <button id="aiBtn" disabled>Generer tilbudstekst</button>
+  </div>
+
+  <h3>Resultat</h3>
+  <pre id="resultat"></pre>
+
+  <h3>Tilbudstekst</h3>
+  <pre id="tilbud"></pre>
+
+</div>
 
 <script>
 let kalkyle = null;
+let tollPerDag = 0;
+
+document.getElementById("hentKmBtn").onclick = async () => {
+  const start = document.getElementById("firmaAdresse").value;
+  const end = document.getElementById("kundeAdresse").value;
+  const turRetur = document.getElementById("turRetur").checked;
+
+  if (!start || !end) {
+    alert("Fyll inn både firmaadresse og kundeadresse");
+    return;
+  }
+
+  const res = await fetch("/api/route", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ start, end })
+  });
+
+  const data = await res.json();
+
+  let km = data.km;
+  let toll = data.toll || 0;
+
+  if (turRetur) {
+    km *= 2;
+    toll *= 2;
+  }
+
+  tollPerDag = toll;
+  document.getElementById("kmPerDag").value = km;
+
+  alert(Avstand funnet:\n${km} km\nBompenger ca: ${toll} kr);
+};
 
 document.getElementById("beregnBtn").onclick = () => {
   const beskrivelse = document.getElementById("beskrivelse").value;
@@ -204,11 +227,6 @@ document.getElementById("beregnBtn").onclick = () => {
   const materiell = Number(document.getElementById("materiell").value || 0);
   const hmsPerDag = Number(document.getElementById("hms").value || 0);
 
-  if (!beskrivelse || !timepris || !kmPerDag) {
-    alert("Fyll inn beskrivelse, timepris og km per dag");
-    return;
-  }
-
   const timer =
     (beskrivelse.match(/(\d+)\s*t/gi) || [])
       .map(x => Number(x.replace(/\D/g, "")))
@@ -216,7 +234,7 @@ document.getElementById("beregnBtn").onclick = () => {
 
   const dager = Math.max(1, Math.ceil(timer / 7.5));
   const arbeid = timer * timepris;
-  const kjøring = dager * kmPerDag * prisPerKm;
+  const kjøring = dager * (kmPerDag * prisPerKm + tollPerDag);
   const hms = dager * hmsPerDag;
 
   const totalEksMva = arbeid + kjøring + avfall + materiell + hms;
@@ -227,23 +245,21 @@ document.getElementById("beregnBtn").onclick = () => {
     beskrivelse,
     timer,
     dager,
-    timepris,
-    kmPerDag,
-    prisPerKm,
     arbeid,
     kjøring,
     avfall,
     materiell,
     hms,
     totalEksMva,
-    totalInkMva
+    totalInkMva,
+    timepris,
+    kmPerDag
   };
 
   document.getElementById("resultat").textContent =
-`Arbeidsomfang:
-${timer} timer fordelt over ${dager} dag(er)
+`Timer: ${timer}
+Dager: ${dager}
 
-Prisoversikt:
 Arbeid: ${arbeid} kr
 Kjøring: ${kjøring} kr
 Avfall: ${avfall} kr
@@ -251,46 +267,22 @@ Materiell: ${materiell} kr
 HMS: ${hms} kr
 
 Totalt eks. mva: ${Math.round(totalEksMva)} kr
-MVA (25 %): ${Math.round(mva)} kr
 Totalt inkl. mva: ${Math.round(totalInkMva)} kr`;
 
   document.getElementById("aiBtn").disabled = false;
 };
 
 document.getElementById("aiBtn").onclick = async () => {
-  const tilbudEl = document.getElementById("tilbud");
-  const kopiBtn = document.getElementById("kopierBtn");
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(kalkyle)
+  });
 
-  tilbudEl.textContent = "Genererer tilbudstekst…";
-  kopiBtn.style.display = "none";
-
-  try {
-    const res = await fetch("/api/ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(kalkyle)
-    });
-
-    if (!res.ok) {
-      tilbudEl.textContent = await res.text();
-      return;
-    }
-
-    const data = await res.json();
-    tilbudEl.textContent = data.text || "AI returnerte ingen tekst.";
-    kopiBtn.style.display = "block";
-
-  } catch (err) {
-    tilbudEl.textContent = "Teknisk feil: " + err.message;
-  }
-};
-
-document.getElementById("kopierBtn").onclick = () => {
-  navigator.clipboard.writeText(
-    document.getElementById("tilbud").textContent
-  );
-  alert("Tilbudstekst kopiert");
+  const data = await res.json();
+  document.getElementById("tilbud").textContent = data.text;
 };
 </script>
+
 </body>
 </html>
