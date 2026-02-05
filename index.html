@@ -94,7 +94,9 @@
 <input id="hms" type="number" value="0">
 
 <button class="dark" onclick="beregn()">Beregn</button>
-<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>Generer tilbudstekst</button>
+<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>
+  Generer tilbudstekst
+</button>
 
 <h3>Resultat</h3>
 <pre id="resultat"></pre>
@@ -104,9 +106,9 @@
 
 </div>
 
-<!-- 🔑 FRONTEND GOOGLE KEY – KUN MAPS + PLACES -->
+<!-- 🔑 FRONTEND GOOGLE MAPS KEY (Maps JS + Places) -->
 <script
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no"
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
   async defer>
 </script>
 
@@ -114,12 +116,16 @@
 let kalkyle = null;
 
 /* ---------- AUTOCOMPLETE ---------- */
-window.addEventListener("load", () => {
-  new google.maps.places.Autocomplete(firmaadresse, { componentRestrictions:{country:"no"}});
-  new google.maps.places.Autocomplete(kundeadresse, { componentRestrictions:{country:"no"}});
-});
+function initAutocomplete() {
+  new google.maps.places.Autocomplete(firmaadresse, {
+    componentRestrictions: { country: "no" }
+  });
+  new google.maps.places.Autocomplete(kundeadresse, {
+    componentRestrictions: { country: "no" }
+  });
+}
 
-/* ---------- BEREGN KM (BACKEND) ---------- */
+/* ---------- BEREGN KM (TUR/RETUR HER) ---------- */
 async function beregnKm() {
   const fra = firmaadresse.value;
   const til = kundeadresse.value;
@@ -132,15 +138,18 @@ async function beregnKm() {
   const res = await fetch("/api/route", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      start: fra,
-      end: til,
-      turRetur: turRetur.checked
-    })
+    body: JSON.stringify({ start: fra, end: til })
   });
 
   const data = await res.json();
-  kmPerDag.value = (data.distanceMeters / 1000).toFixed(1);
+
+  let km = data.distanceMeters / 1000;
+
+  if (turRetur.checked) {
+    km = km * 2;
+  }
+
+  kmPerDag.value = km.toFixed(1);
 }
 
 /* ---------- BEREGN TOTAL ---------- */
@@ -164,8 +173,11 @@ function beregn() {
 
   kalkyle = {
     beskrivelse: beskrivelse.value,
-    timer, dager, arbeid, kjøring,
-    avfall: avf, materiell: mat, hms: hmsTot,
+    timer, dager,
+    arbeid, kjøring,
+    avfall: avf,
+    materiell: mat,
+    hms: hmsTot,
     totalEksMva: totalEks,
     totalInkMva: totalInk,
     timepris: Number(timepris.value),
