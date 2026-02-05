@@ -17,24 +17,28 @@ export default async function handler(req, res) {
         headers: {
           "Content-Type": "application/json",
           "X-Goog-Api-Key": process.env.GOOGLE_MAPS_BACKEND_KEY,
-          "X-Goog-FieldMask": "routes.distanceMeters"
+          "X-Goog-FieldMask":
+            "routes.distanceMeters,routes.travelAdvisory.tollInfo"
         },
         body: JSON.stringify({
           origin: { address: start },
           destination: { address: end },
-          travelMode: "DRIVE"
+          travelMode: "DRIVE",
+          extraComputations: ["TOLLS"]
         })
       }
     );
 
     const data = await response.json();
+    const route = data.routes?.[0];
 
-    if (!data.routes || !data.routes.length) {
-      return res.status(500).json({ error: "Ingen rute funnet", data });
-    }
+    const distanceMeters = route?.distanceMeters || 0;
+    const tolls =
+      route?.travelAdvisory?.tollInfo?.estimatedPrice?.[0]?.units || 0;
 
     res.status(200).json({
-      distanceMeters: data.routes[0].distanceMeters
+      distanceMeters,
+      tolls
     });
 
   } catch (err) {
