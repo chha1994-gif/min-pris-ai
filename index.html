@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="no">
 <head>
@@ -44,6 +45,9 @@
     }
     .dark { background:#111827; color:white; }
     .blue { background:#2563eb; color:white; }
+    .danger { background:#e11d48; color:white; }
+    .success { background:#16a34a; color:white; }
+
     pre {
       background:#f1f5f9;
       padding:14px;
@@ -52,7 +56,6 @@
       margin-top:10px;
     }
 
-    /* Tur/retur-rad */
     .checkbox-row {
       display: flex;
       align-items: center;
@@ -63,10 +66,6 @@
     .checkbox-row input {
       width: auto;
       margin: 0;
-    }
-    .checkbox-row label {
-      margin: 0;
-      cursor: pointer;
     }
   </style>
 </head>
@@ -84,6 +83,10 @@
   placeholder="Beskriv jobben, f.eks: 40t riving, 20t rengjøring">
 </textarea>
 
+<button type="button" class="danger" onclick="slettBeskrivelse()">
+  Slett arbeidsbeskrivelse
+</button>
+
 <!-- 2️⃣ TIMEPRIS -->
 <label>Timepris (kr)</label>
 <input id="timepris" type="number" />
@@ -95,7 +98,6 @@
 <label>Kundeadresse</label>
 <input id="kundeadresse" type="text" placeholder="F.eks: Karl Johans gate 10, Oslo" />
 
-<!-- ✅ TUR / RETUR RETT UNDER KUNDEADRESSE -->
 <div class="checkbox-row">
   <input type="checkbox" id="turRetur" checked />
   <label for="turRetur">Tur / retur</label>
@@ -109,9 +111,9 @@
 <label>Pris per km (kr)</label>
 <input id="prisPerKm" type="number" value="15" />
 
-<!-- 4️⃣ BOMPENGER (MANUELL) -->
+<!-- 4️⃣ BOMPENGER -->
 <label>Estimerte bompenger per dag (kr)</label>
-<input id="bomPerDag" type="number" placeholder="F.eks 250" />
+<input id="bomPerDag" type="number" />
 
 <!-- 5️⃣ ØVRIGE KOSTNADER -->
 <label>Avfall (kr)</label>
@@ -135,9 +137,13 @@
 <h3>Tilbudstekst</h3>
 <pre id="tilbud"></pre>
 
+<button type="button" class="success" onclick="kopierTilbud()">
+  Kopier tilbudstekst
+</button>
+
 </div>
 
-<!-- GOOGLE MAPS FRONTEND KEY -->
+<!-- GOOGLE MAPS -->
 <script
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
   async defer>
@@ -145,6 +151,20 @@
 
 <script>
 let kalkyle = null;
+
+/* 🔹 AUTO-LAGRING AV ARBEIDSBESKRIVELSE */
+const beskrivelseEl = document.getElementById("beskrivelse");
+beskrivelseEl.value = localStorage.getItem("minpris_beskrivelse") || "";
+
+beskrivelseEl.addEventListener("input", () => {
+  localStorage.setItem("minpris_beskrivelse", beskrivelseEl.value);
+});
+
+function slettBeskrivelse() {
+  if (!confirm("Vil du slette arbeidsbeskrivelsen?")) return;
+  beskrivelseEl.value = "";
+  localStorage.removeItem("minpris_beskrivelse");
+}
 
 /* AUTOCOMPLETE */
 function initAutocomplete() {
@@ -156,12 +176,9 @@ function initAutocomplete() {
   });
 }
 
-/* KM-BEREGNING */
+/* KM */
 async function beregnKm() {
-  const fra = firmaadresse.value;
-  const til = kundeadresse.value;
-
-  if (!fra || !til) {
+  if (!firmaadresse.value || !kundeadresse.value) {
     alert("Fyll inn begge adresser");
     return;
   }
@@ -169,18 +186,19 @@ async function beregnKm() {
   const res = await fetch("/api/route", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ start: fra, end: til })
+    body: JSON.stringify({
+      start: firmaadresse.value,
+      end: kundeadresse.value
+    })
   });
 
   const data = await res.json();
-
   let km = data.km;
   if (turRetur.checked) km *= 2;
-
   kmPerDag.value = km.toFixed(1);
 }
 
-/* TOTALBEREGNING */
+/* BEREGNING */
 function beregn() {
   const timer =
     (beskrivelse.value.match(/(\d+)\s*t/gi) || [])
@@ -197,8 +215,7 @@ function beregn() {
   const mat = Number(materiell.value||0);
 
   const totalEks = arbeid + kjøring + bom + hmsTot + avf + mat;
-  const mva = totalEks * 0.25;
-  const totalInk = totalEks + mva;
+  const totalInk = totalEks * 1.25;
 
   kalkyle = {
     beskrivelse: beskrivelse.value,
@@ -211,21 +228,12 @@ function beregn() {
     materiell: mat,
     hms: hmsTot,
     totalEksMva: totalEks,
-    totalInkMva: totalInk,
-    timepris: Number(timepris.value),
-    kmPerDag: Number(kmPerDag.value)
+    totalInkMva: totalInk
   };
 
   resultat.textContent =
 `Arbeidsomfang:
 ${timer} timer over ${dager} dag(er)
-
-Arbeid: ${arbeid} kr
-Kjøring: ${kjøring} kr
-Est. bompenger: ${bom} kr
-Avfall: ${avf} kr
-Materiell: ${mat} kr
-HMS: ${hmsTot} kr
 
 Totalt eks. mva: ${Math.round(totalEks)} kr
 Totalt inkl. mva: ${Math.round(totalInk)} kr`;
@@ -245,6 +253,17 @@ async function genererTilbud() {
 
   const data = await res.json();
   tilbud.textContent = data.text || "Ingen tekst returnert";
+}
+
+/* KOPIER */
+function kopierTilbud() {
+  if (!tilbud.textContent.trim()) {
+    alert("Ingen tilbudstekst å kopiere");
+    return;
+  }
+
+  navigator.clipboard.writeText(tilbud.textContent)
+    .then(() => alert("Tilbudstekst kopiert 📋"));
 }
 </script>
 
