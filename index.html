@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="no">
 <head>
@@ -67,25 +68,23 @@
       margin: 0;
     }
 
-    /* 🔹 Arbeidsbeskrivelse */
-    .textarea-wrapper {
-      position: relative;
+    /* 🔹 Start ny-knapp under arbeidsbeskrivelse */
+    .start-new-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 6px;
     }
     .start-new-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      padding: 4px 8px;
+      background: #dc2626;
+      color: white;
       font-size: 12px;
-      border-radius: 999px;
-      background: #e5e7eb;
-      color: #111827;
+      padding: 6px 10px;
+      border-radius: 8px;
       cursor: pointer;
-      opacity: 0.8;
+      opacity: 0.9;
     }
     .start-new-btn:hover {
       opacity: 1;
-      background: #d1d5db;
     }
   </style>
 </head>
@@ -98,17 +97,16 @@
 <!-- 1️⃣ ARBEIDSBESKRIVELSE -->
 <label>Arbeidsbeskrivelse</label>
 
-<div class="textarea-wrapper">
-  <textarea
-    id="beskrivelse"
-    rows="4"
-    placeholder="Beskriv jobben, f.eks: bad - 24t riving, 10t sanering">
-  </textarea>
+<textarea
+  id="beskrivelse"
+  rows="4"
+  placeholder="Beskriv jobben, f.eks: bad - 24t riving, 10t sanering">
+</textarea>
 
+<div class="start-new-row">
   <button
     type="button"
     class="start-new-btn"
-    title="Start ny arbeidsbeskrivelse"
     onclick="startNyBeskrivelse()">
     Start ny
   </button>
