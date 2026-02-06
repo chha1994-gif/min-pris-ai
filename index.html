@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="no">
 <head>
@@ -86,6 +85,9 @@
     .start-new-btn:hover {
       opacity: 1;
     }
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 
@@ -106,9 +108,10 @@
 <div class="start-new-row">
   <button
     type="button"
-    class="start-new-btn"
+    id="startNyBtn"
+    class="start-new-btn hidden"
     onclick="startNyBeskrivelse()">
-    Start ny
+    Slett og start ny beskrivelse
   </button>
 </div>
 
@@ -179,16 +182,25 @@ let kalkyle = null;
 
 /* 🔹 AUTO-LAGRING AV ARBEIDSBESKRIVELSE */
 const beskrivelseEl = document.getElementById("beskrivelse");
+const startNyBtn = document.getElementById("startNyBtn");
+
+function toggleStartNy() {
+  startNyBtn.classList.toggle("hidden", !beskrivelseEl.value.trim());
+}
+
 beskrivelseEl.value = localStorage.getItem("minpris_beskrivelse") || "";
+toggleStartNy();
 
 beskrivelseEl.addEventListener("input", () => {
   localStorage.setItem("minpris_beskrivelse", beskrivelseEl.value);
+  toggleStartNy();
 });
 
 function startNyBeskrivelse() {
-  if (!confirm("Starte ny arbeidsbeskrivelse?")) return;
+  if (!confirm("Vil du slette og starte ny arbeidsbeskrivelse?")) return;
   beskrivelseEl.value = "";
   localStorage.removeItem("minpris_beskrivelse");
+  toggleStartNy();
 }
 
 /* AUTOCOMPLETE */
