@@ -1,183 +1,9 @@
-<!DOCTYPE html>
-<html lang="no">
-<head>
-  <meta charset="UTF-8" />
-  <title>MinPris – tilbudskalkulator</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f4f6fb;
-      padding: 16px;
-    }
-    .box {
-      max-width: 760px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    }
-    .title { text-align: center; margin-bottom: 24px; }
-    label { font-weight: 600; display: block; margin-top: 14px; }
-    input, textarea {
-      width: 100%;
-      padding: 12px;
-      margin-top: 6px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      font-size: 15px;
-      box-sizing: border-box;
-    }
-    button {
-      width: 100%;
-      padding: 14px;
-      margin-top: 14px;
-      font-size: 15px;
-      font-weight: 600;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-    }
-    .dark { background:#111827; color:white; }
-    .blue { background:#2563eb; color:white; }
-    .success { background:#16a34a; color:white; }
-
-    pre {
-      background:#f1f5f9;
-      padding:14px;
-      border-radius:10px;
-      white-space:pre-wrap;
-      margin-top:10px;
-    }
-
-    .checkbox-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-      font-weight: 600;
-    }
-    .checkbox-row input { width: auto; margin: 0; }
-
-    .start-new-row {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 6px;
-    }
-    .start-new-btn {
-      background: #dc2626;
-      color: white;
-      font-size: 12px;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      opacity: 0.9;
-    }
-    .hidden { display: none; }
-
-    /* ekstra poster – kun visning */
-    .ekstra-rad {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 4px;
-      font-size: 14px;
-    }
-    .ekstra-rad button {
-      width: auto;
-      padding: 2px 6px;
-      font-size: 12px;
-      margin-left: 8px;
-    }
-  </style>
-</head>
-
-<body>
-<div class="box">
-
-<h1 class="title">MinPris – tilbudskalkulator</h1>
-
-<label>Arbeidsbeskrivelse</label>
-<textarea id="beskrivelse" rows="4"
-  placeholder="Beskriv jobben, f.eks: bad – 25t riving, 8t sanering"></textarea>
-
-<div class="start-new-row">
-  <button type="button" id="startNyBtn"
-    class="start-new-btn hidden"
-    onclick="startNyBeskrivelse()">
-    Slett og start ny beskrivelse
-  </button>
-</div>
-
-<label>Timepris (kr)</label>
-<input id="timepris" type="number" />
-
-<label>Firmaadresse</label>
-<input id="firmaadresse" type="text" />
-
-<label>Kundeadresse</label>
-<input id="kundeadresse" type="text" />
-
-<div class="checkbox-row">
-  <input type="checkbox" id="turRetur" checked />
-  <label for="turRetur">Tur / retur</label>
-</div>
-
-<button class="blue" onclick="beregnKm()">Beregn kilometer</button>
-
-<label>Kilometer per dag</label>
-<input id="kmPerDag" type="number" />
-
-<label>Pris per km (kr)</label>
-<input id="prisPerKm" type="number" value="15" />
-
-<label>Estimerte bompenger per dag (kr)</label>
-<input id="bomPerDag" type="number" />
-
-<label>Avfall totalt (kr)</label>
-<input id="avfall" type="number" value="0" />
-
-<label>Materiell / forbruk totalt (kr)</label>
-<input id="materiell" type="number" value="0" />
-
-<label>HMS-forbruk per dag (kr)</label>
-<input id="hms" type="number" value="0" />
-
-<!-- 🔹 EKSTRA POSTER – KUN TILLEGG -->
-<div id="ekstraPoster"></div>
-
-<button type="button" class="blue" onclick="leggTilEkstraPost()">
-  + Legg til ekstra post
-</button>
-<!-- 🔹 SLUTT EKSTRA -->
-
-<button class="dark" onclick="beregn()">Beregn</button>
-<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>
-  Generer tilbudstekst
-</button>
-
-<h3>Resultat</h3>
-<pre id="resultat"></pre>
-
-<h3>Tilbudstekst</h3>
-<pre id="tilbud"></pre>
-
-<button type="button" class="success" onclick="kopierTilbud()">
-  Kopier tilbudstekst
-</button>
-
-</div>
-
-<script
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
-  async defer>
-</script>
-
 <script>
 let kalkyle = null;
 
-/* AUTOLAGRING */
+/* =========================
+   AUTO-LAGRING BESKRIVELSE
+   ========================= */
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
 
@@ -193,6 +19,26 @@ beskrivelseEl.addEventListener("input", () => {
   toggleStartNy();
 });
 
+/* TAB-STØTTE */
+beskrivelseEl.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const start = beskrivelseEl.selectionStart;
+    const end = beskrivelseEl.selectionEnd;
+    const tab = "  ";
+
+    beskrivelseEl.value =
+      beskrivelseEl.value.substring(0, start) +
+      tab +
+      beskrivelseEl.value.substring(end);
+
+    beskrivelseEl.selectionStart =
+    beskrivelseEl.selectionEnd = start + tab.length;
+
+    localStorage.setItem("minpris_beskrivelse", beskrivelseEl.value);
+  }
+});
+
 function startNyBeskrivelse() {
   if (!confirm("Vil du slette og starte ny arbeidsbeskrivelse?")) return;
   beskrivelseEl.value = "";
@@ -200,6 +46,9 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
+/* =========================
+   GOOGLE PLACES AUTOCOMPLETE
+   ========================= */
 function initAutocomplete() {
   new google.maps.places.Autocomplete(firmaadresse, {
     componentRestrictions: { country: "no" }
@@ -209,7 +58,9 @@ function initAutocomplete() {
   });
 }
 
-/* EKSTRA POSTER – UI ONLY */
+/* =========================
+   EKSTRA POSTER (UI + VISNING)
+   ========================= */
 let ekstraPoster = [];
 
 function leggTilEkstraPost() {
@@ -223,14 +74,14 @@ function leggTilEkstraPost() {
   visEkstraPoster();
 }
 
-function fjernEkstraPost(i) {
-  ekstraPoster.splice(i, 1);
+function fjernEkstraPost(index) {
+  ekstraPoster.splice(index, 1);
   visEkstraPoster();
 }
 
 function visEkstraPoster() {
-  const c = document.getElementById("ekstraPoster");
-  c.innerHTML = "";
+  const container = document.getElementById("ekstraPoster");
+  container.innerHTML = "";
 
   ekstraPoster.forEach((p, i) => {
     const rad = document.createElement("div");
@@ -241,11 +92,13 @@ function visEkstraPoster() {
         <button onclick="fjernEkstraPost(${i})">✕</button>
       </span>
     `;
-    c.appendChild(rad);
+    container.appendChild(rad);
   });
 }
 
-/* KM */
+/* =========================
+   KILOMETERBEREGNING
+   ========================= */
 async function beregnKm() {
   if (!firmaadresse.value || !kundeadresse.value) {
     alert("Fyll inn begge adresser");
@@ -267,7 +120,9 @@ async function beregnKm() {
   kmPerDag.value = km.toFixed(1);
 }
 
-/* BEREGNING – HELT URØRT */
+/* =========================
+   BEREGNING (BASELINE)
+   ========================= */
 function beregn() {
   const timer =
     (beskrivelse.value.match(/(\d+)\s*t/gi) || [])
@@ -276,24 +131,33 @@ function beregn() {
 
   const dager = Math.max(1, Math.ceil(timer / 7.5));
 
-  const arbeid = timer * Number(timepris.value||0);
-  const kjøring = dager * Number(kmPerDag.value||0) * Number(prisPerKm.value||0);
-  const bom = dager * Number(bomPerDag.value||0);
-  const hmsTot = dager * Number(hms.value||0);
-  const avf = Number(avfall.value||0);
-  const mat = Number(materiell.value||0);
+  const arbeid = timer * Number(timepris.value || 0);
+  const kjøring = dager * Number(kmPerDag.value || 0) * Number(prisPerKm.value || 0);
+  const bom = dager * Number(bomPerDag.value || 0);
+  const hmsTot = dager * Number(hms.value || 0);
+  const avf = Number(avfall.value || 0);
+  const mat = Number(materiell.value || 0);
 
   const totalEks = arbeid + kjøring + bom + hmsTot + avf + mat;
   const totalInk = totalEks * 1.25;
 
+  /* 🔹 Beskrivelse + ekstra poster til AI */
+  const beskrivelseMedEkstra =
+    ekstraPoster.length
+      ? beskrivelse.value +
+        "\n\nEkstra poster:\n" +
+        ekstraPoster.map(p => – ${p.navn}: ${p.pris} kr).join("\n")
+      : beskrivelse.value;
+
   kalkyle = {
-    beskrivelse: beskrivelse.value,
+    beskrivelse: beskrivelseMedEkstra,
     timer,
     dager,
     totalEksMva: totalEks,
     totalInkMva: totalInk
   };
 
+  /* RESULTAT */
   resultat.textContent =
 `Arbeidsomfang:
 ${timer} timer over ${dager} dag(er)
@@ -304,8 +168,17 @@ Totalpris (eks. mva):
 – Bom: ${Math.round(bom)} kr
 – HMS: ${Math.round(hmsTot)} kr
 – Avfall totalt: ${avf} kr
-– Materiell/forbruk totalt: ${mat} kr
---------------------
+– Materiell/forbruk totalt: ${mat} kr`;
+
+  if (ekstraPoster.length) {
+    resultat.textContent += \n\nEkstra poster:;
+    ekstraPoster.forEach(p => {
+      resultat.textContent += \n– ${p.navn}: ${p.pris} kr;
+    });
+  }
+
+  resultat.textContent +=
+`\n--------------------
 Sum eks. mva: ${Math.round(totalEks)} kr
 
 Mva (25 %): ${Math.round(totalEks * 0.25)} kr
@@ -314,6 +187,9 @@ Totalt inkl. mva: ${Math.round(totalInk)} kr`;
   aiBtn.disabled = false;
 }
 
+/* =========================
+   AI-TILBUD
+   ========================= */
 async function genererTilbud() {
   tilbud.textContent = "Genererer tilbudstekst…";
 
@@ -327,6 +203,9 @@ async function genererTilbud() {
   tilbud.textContent = data.text || "Ingen tekst returnert";
 }
 
+/* =========================
+   KOPIER TILBUD
+   ========================= */
 function kopierTilbud() {
   if (!tilbud.textContent.trim()) {
     alert("Ingen tilbudstekst å kopiere");
@@ -336,6 +215,3 @@ function kopierTilbud() {
     .then(() => alert("Tilbudstekst kopiert 📋"));
 }
 </script>
-
-</body>
-</html>
