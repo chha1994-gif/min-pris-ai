@@ -19,17 +19,8 @@
       border-radius: 14px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
-
-    .title {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-
-    label {
-      font-weight: 600;
-      display: block;
-      margin-top: 14px;
-    }
+    .title { text-align: center; margin-bottom: 24px; }
+    label { font-weight: 600; display: block; margin-top: 14px; }
     input, textarea {
       width: 100%;
       padding: 12px;
@@ -52,7 +43,6 @@
     .dark { background:#111827; color:white; }
     .blue { background:#2563eb; color:white; }
     .success { background:#16a34a; color:white; }
-
     pre {
       background:#f1f5f9;
       padding:14px;
@@ -60,7 +50,6 @@
       white-space:pre-wrap;
       margin-top:10px;
     }
-
     .checkbox-row {
       display: flex;
       align-items: center;
@@ -68,11 +57,7 @@
       margin-top: 10px;
       font-weight: 600;
     }
-    .checkbox-row input {
-      width: auto;
-      margin: 0;
-    }
-
+    .checkbox-row input { width: auto; margin: 0; }
     .start-new-row {
       display: flex;
       justify-content: flex-end;
@@ -87,9 +72,7 @@
       cursor: pointer;
       opacity: 0.9;
     }
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
   </style>
 </head>
 
@@ -99,16 +82,11 @@
 <h1 class="title">MinPris – tilbudskalkulator</h1>
 
 <label>Arbeidsbeskrivelse</label>
-<textarea
-  id="beskrivelse"
-  rows="4"
-  placeholder="Beskriv jobben, f.eks: bad – 25t riving, 8t sanering">
-</textarea>
+<textarea id="beskrivelse" rows="4"
+  placeholder="Beskriv jobben, f.eks: bad – 25t riving, 8t sanering"></textarea>
 
 <div class="start-new-row">
-  <button
-    type="button"
-    id="startNyBtn"
+  <button type="button" id="startNyBtn"
     class="start-new-btn hidden"
     onclick="startNyBeskrivelse()">
     Slett og start ny beskrivelse
@@ -140,13 +118,13 @@
 <label>Estimerte bompenger per dag (kr)</label>
 <input id="bomPerDag" type="number" />
 
-<!-- ✅ HER ER DET DU BA OM -->
+<!-- 🔹 KUN TEKST ENDRET -->
 <label>Avfall totalt (kr)</label>
 <input id="avfall" type="number" value="0" />
 
 <label>Materiell / forbruk totalt (kr)</label>
 <input id="materiell" type="number" value="0" />
-<!-- ✅ -->
+<!-- 🔹 -->
 
 <label>HMS-forbruk per dag (kr)</label>
 <input id="hms" type="number" value="0" />
@@ -174,7 +152,129 @@
 </script>
 
 <script>
-/* resten av JS-koden er uendret */
+/* 🔹 HELE DIN OPPRINNELIGE JS – URØRT */
+
+let kalkyle = null;
+
+const beskrivelseEl = document.getElementById("beskrivelse");
+const startNyBtn = document.getElementById("startNyBtn");
+
+function toggleStartNy() {
+  startNyBtn.classList.toggle("hidden", !beskrivelseEl.value.trim());
+}
+
+beskrivelseEl.value = localStorage.getItem("minpris_beskrivelse") || "";
+toggleStartNy();
+
+beskrivelseEl.addEventListener("input", () => {
+  localStorage.setItem("minpris_beskrivelse", beskrivelseEl.value);
+  toggleStartNy();
+});
+
+function startNyBeskrivelse() {
+  if (!confirm("Vil du slette og starte ny arbeidsbeskrivelse?")) return;
+  beskrivelseEl.value = "";
+  localStorage.removeItem("minpris_beskrivelse");
+  toggleStartNy();
+}
+
+function initAutocomplete() {
+  new google.maps.places.Autocomplete(firmaadresse, {
+    componentRestrictions: { country: "no" }
+  });
+  new google.maps.places.Autocomplete(kundeadresse, {
+    componentRestrictions: { country: "no" }
+  });
+}
+
+async function beregnKm() {
+  if (!firmaadresse.value || !kundeadresse.value) {
+    alert("Fyll inn begge adresser");
+    return;
+  }
+
+  const res = await fetch("/api/route", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      start: firmaadresse.value,
+      end: kundeadresse.value
+    })
+  });
+
+  const data = await res.json();
+  let km = data.km;
+  if (turRetur.checked) km *= 2;
+  kmPerDag.value = km.toFixed(1);
+}
+
+function beregn() {
+  const timer =
+    (beskrivelse.value.match(/(\d+)\s*t/gi) || [])
+      .map(x => Number(x.replace(/\D/g,"")))
+      .reduce((a,b)=>a+b,0);
+
+  const dager = Math.max(1, Math.ceil(timer / 7.5));
+
+  const arbeid = timer * Number(timepris.value||0);
+  const kjøring = dager * Number(kmPerDag.value||0) * Number(prisPerKm.value||0);
+  const bom = dager * Number(bomPerDag.value||0);
+  const hmsTot = dager * Number(hms.value||0);
+  const avf = Number(avfall.value||0);
+  const mat = Number(materiell.value||0);
+
+  const totalEks = arbeid + kjøring + bom + hmsTot + avf + mat;
+  const totalInk = totalEks * 1.25;
+
+  kalkyle = {
+    beskrivelse: beskrivelse.value,
+    timer,
+    dager,
+    totalEksMva: totalEks,
+    totalInkMva: totalInk
+  };
+
+  resultat.textContent =
+`Arbeidsomfang:
+${timer} timer over ${dager} dag(er)
+
+Totalpris (eks. mva):
+– Arbeid: ${Math.round(arbeid)} kr
+– Kjøring: ${Math.round(kjøring)} kr
+– Bom: ${Math.round(bom)} kr
+– HMS: ${Math.round(hmsTot)} kr
+– Avfall totalt: ${avf} kr
+– Materiell/forbruk totalt: ${mat} kr
+--------------------
+Sum eks. mva: ${Math.round(totalEks)} kr
+
+Mva (25 %): ${Math.round(totalEks * 0.25)} kr
+Totalt inkl. mva: ${Math.round(totalInk)} kr`;
+
+  aiBtn.disabled = false;
+}
+
+async function genererTilbud() {
+  tilbud.textContent = "Genererer tilbudstekst…";
+
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(kalkyle)
+  });
+
+  const data = await res.json();
+  tilbud.textContent = data.text || "Ingen tekst returnert";
+}
+
+function kopierTilbud() {
+  if (!tilbud.textContent.trim()) {
+    alert("Ingen tilbudstekst å kopiere");
+    return;
+  }
+  navigator.clipboard.writeText(tilbud.textContent)
+    .then(() => alert("Tilbudstekst kopiert 📋"));
+}
 </script>
 
 </body>
