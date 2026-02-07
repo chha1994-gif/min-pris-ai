@@ -67,7 +67,7 @@
       margin: 0;
     }
 
-    /* 🔹 Start ny-knapp under arbeidsbeskrivelse */
+    /* 🔹 Start ny-knapp */
     .start-new-row {
       display: flex;
       justify-content: flex-end;
@@ -180,7 +180,7 @@
 <script>
 let kalkyle = null;
 
-/* 🔹 AUTO-LAGRING AV ARBEIDSBESKRIVELSE */
+/* 🔹 AUTO-LAGRING */
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
 
@@ -194,6 +194,27 @@ toggleStartNy();
 beskrivelseEl.addEventListener("input", () => {
   localStorage.setItem("minpris_beskrivelse", beskrivelseEl.value);
   toggleStartNy();
+});
+
+/* 🔹 TAB-STØTTE I TEXTAREA */
+beskrivelseEl.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") {
+    e.preventDefault();
+
+    const start = beskrivelseEl.selectionStart;
+    const end = beskrivelseEl.selectionEnd;
+    const tab = "  "; // 2 mellomrom
+
+    beskrivelseEl.value =
+      beskrivelseEl.value.substring(0, start) +
+      tab +
+      beskrivelseEl.value.substring(end);
+
+    beskrivelseEl.selectionStart =
+    beskrivelseEl.selectionEnd = start + tab.length;
+
+    localStorage.setItem("minpris_beskrivelse", beskrivelseEl.value);
+  }
 });
 
 function startNyBeskrivelse() {
