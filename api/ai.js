@@ -10,18 +10,27 @@ export default async function handler(req, res) {
       beskrivelse,
       timer,
       dager,
+      timepris,
+
       arbeid,
       kjøring,
+      bom,
       avfall,
       materiell,
       hms,
+
+      kmPerDag,
+
       totalEksMva,
-      totalInkMva,
-      timepris,
-      kmPerDag
+      totalInkMva
     } = req.body;
 
-    if (!beskrivelse || !timer || !dager || !totalEksMva) {
+    if (
+      beskrivelse == null ||
+      timer == null ||
+      dager == null ||
+      totalEksMva == null
+    ) {
       return res.status(400).json({
         error: "Manglende data i kalkyle"
       });
@@ -37,19 +46,16 @@ Du er en profesjonell norsk håndverker som skriver tilbud til kunde.
 Jobbbeskrivelse:
 ${beskrivelse}
 
-Kalkyle (ferdig beregnet – tallene er faste):
-Arbeid: ${arbeid} kr
+Kalkyle (ferdig beregnet – tallene er endelige):
+Arbeid (${timer} timer × ${timepris} kr): ${arbeid} kr
 Kjøring (${kmPerDag} km per dag i ${dager} dager): ${kjøring} kr
+Bom: ${bom} kr
 Avfall: ${avfall} kr
 Materiell: ${materiell} kr
 HMS-forbruk: ${hms} kr
 
-Timer totalt: ${timer}
-Antall dager: ${dager}
-Timepris: ${timepris} kr
-
-Totalpris eks. mva: ${totalEksMva} kr
-Totalpris inkl. mva: ${totalInkMva} kr
+Totalt eks. mva: ${totalEksMva} kr
+Totalt inkl. mva: ${totalInkMva} kr
 
 VIKTIG – MÅ FØLGES:
 - Alle tall over er endelige og skal brukes nøyaktig slik de er oppgitt
@@ -59,9 +65,9 @@ VIKTIG – MÅ FØLGES:
 
 Oppgave:
 Skriv en profesjonell og ryddig tilbudstekst på norsk.
-Du bestemmer selv struktur, rekkefølge og avsnitt.
+Del gjerne opp i avsnitt.
 Forklar kort hva tilbudet inkluderer.
-Avslutt med en høflig setning om at kunden gjerne kan ta kontakt ved spørsmål eller avklaringer.
+Avslutt med en høflig setning om at kunden gjerne kan ta kontakt ved spørsmål.
 `;
 
     const response = await client.responses.create({
