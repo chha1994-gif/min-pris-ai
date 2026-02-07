@@ -169,7 +169,7 @@
 
 </div>
 
-<!-- 🔹 GOOGLE MAPS PLACES (VIKTIG for adresseforslag) -->
+<!-- GOOGLE MAPS PLACES -->
 <script
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
   async
@@ -202,7 +202,7 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
-/* 🔹 AUTOCOMPLETE */
+/* AUTOCOMPLETE */
 function initAutocomplete() {
   new google.maps.places.Autocomplete(firmaadresse, {
     componentRestrictions: { country: "no" }
@@ -212,7 +212,7 @@ function initAutocomplete() {
   });
 }
 
-/* 🔹 KM */
+/* KM */
 async function beregnKm() {
   if (!firmaadresse.value || !kundeadresse.value) {
     alert("Fyll inn begge adresser");
@@ -234,7 +234,7 @@ async function beregnKm() {
   kmPerDag.value = km.toFixed(1);
 }
 
-/* 🔹 BEREGNING (URØRT) */
+/* BEREGNING (URØRT) */
 function beregn() {
   const timer =
     (beskrivelse.value.match(/(\d+)\s*t/gi) || [])
@@ -270,8 +270,8 @@ Totalpris (eks. mva):
 – Kjøring: ${Math.round(kjøring)} kr
 – Bom: ${Math.round(bom)} kr
 – HMS: ${Math.round(hmsTot)} kr
-– Avfall: ${avf} kr
-– Materiell: ${mat} kr
+– Avfall totalt: ${avf} kr
+– Materiell/forbruk totalt: ${mat} kr
 --------------------
 Sum eks. mva: ${Math.round(totalEks)} kr
 
@@ -281,7 +281,7 @@ Totalt inkl. mva: ${Math.round(totalInk)} kr`;
   aiBtn.disabled = false;
 }
 
-/* 🔹 AI */
+/* AI */
 async function genererTilbud() {
   tilbud.textContent = "Genererer tilbudstekst…";
 
@@ -295,7 +295,7 @@ async function genererTilbud() {
   tilbud.textContent = data.text || "Ingen tekst returnert";
 }
 
-/* 🔹 KOPIER */
+/* KOPIER */
 function kopierTilbud() {
   if (!tilbud.textContent.trim()) {
     alert("Ingen tilbudstekst å kopiere");
