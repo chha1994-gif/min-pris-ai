@@ -102,11 +102,16 @@
 <h1 class="title">MinPris – tilbudskalkulator</h1>
 
 <label>Arbeidsbeskrivelse</label>
-<textarea id="beskrivelse" rows="4"
-  placeholder="Beskriv jobben, f.eks: bad – 25t riving, 8t sanering"></textarea>
+<textarea
+  id="beskrivelse"
+  rows="4"
+  placeholder="Beskriv jobben, f.eks: bad – 25t riving, 8t sanering">
+</textarea>
 
 <div class="start-new-row">
-  <button type="button" id="startNyBtn"
+  <button
+    type="button"
+    id="startNyBtn"
     class="start-new-btn hidden"
     onclick="startNyBeskrivelse()">
     Slett og start ny beskrivelse
@@ -117,10 +122,10 @@
 <input id="timepris" type="number" />
 
 <label>Firmaadresse</label>
-<input id="firmaadresse" type="text" />
+<input id="firmaadresse" type="text" placeholder="F.eks: Storgata 1, Oslo" />
 
 <label>Kundeadresse</label>
-<input id="kundeadresse" type="text" />
+<input id="kundeadresse" type="text" placeholder="F.eks: Karl Johans gate 10, Oslo" />
 
 <div class="checkbox-row">
   <input type="checkbox" id="turRetur" checked />
@@ -164,9 +169,17 @@
 
 </div>
 
+<!-- 🔹 GOOGLE MAPS PLACES (VIKTIG for adresseforslag) -->
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
+  async
+  defer>
+</script>
+
 <script>
 let kalkyle = null;
 
+/* 🔹 AUTO-LAGRING */
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
 
@@ -189,6 +202,17 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
+/* 🔹 AUTOCOMPLETE */
+function initAutocomplete() {
+  new google.maps.places.Autocomplete(firmaadresse, {
+    componentRestrictions: { country: "no" }
+  });
+  new google.maps.places.Autocomplete(kundeadresse, {
+    componentRestrictions: { country: "no" }
+  });
+}
+
+/* 🔹 KM */
 async function beregnKm() {
   if (!firmaadresse.value || !kundeadresse.value) {
     alert("Fyll inn begge adresser");
@@ -210,6 +234,7 @@ async function beregnKm() {
   kmPerDag.value = km.toFixed(1);
 }
 
+/* 🔹 BEREGNING (URØRT) */
 function beregn() {
   const timer =
     (beskrivelse.value.match(/(\d+)\s*t/gi) || [])
@@ -256,6 +281,7 @@ Totalt inkl. mva: ${Math.round(totalInk)} kr`;
   aiBtn.disabled = false;
 }
 
+/* 🔹 AI */
 async function genererTilbud() {
   tilbud.textContent = "Genererer tilbudstekst…";
 
@@ -269,6 +295,7 @@ async function genererTilbud() {
   tilbud.textContent = data.text || "Ingen tekst returnert";
 }
 
+/* 🔹 KOPIER */
 function kopierTilbud() {
   if (!tilbud.textContent.trim()) {
     alert("Ingen tilbudstekst å kopiere");
