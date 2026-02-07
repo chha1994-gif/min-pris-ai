@@ -73,7 +73,6 @@
       margin: 0;
     }
 
-    /* 🔹 Start ny-knapp */
     .start-new-row {
       display: flex;
       justify-content: flex-end;
@@ -102,35 +101,26 @@
 
 <h1 class="title">MinPris – tilbudskalkulator</h1>
 
-<!-- 1️⃣ ARBEIDSBESKRIVELSE -->
 <label>Arbeidsbeskrivelse</label>
-
-<textarea
-  id="beskrivelse"
-  rows="4"
-  placeholder="Beskriv jobben, f.eks: bad – 25t riving, 8t sanering (Tips: bruk Enter for ny linje)">
-</textarea>
+<textarea id="beskrivelse" rows="4"
+  placeholder="Beskriv jobben, f.eks: bad – 25t riving, 8t sanering"></textarea>
 
 <div class="start-new-row">
-  <button
-    type="button"
-    id="startNyBtn"
+  <button type="button" id="startNyBtn"
     class="start-new-btn hidden"
     onclick="startNyBeskrivelse()">
     Slett og start ny beskrivelse
   </button>
 </div>
 
-<!-- 2️⃣ TIMEPRIS -->
 <label>Timepris (kr)</label>
 <input id="timepris" type="number" />
 
-<!-- 3️⃣ ADRESSER -->
 <label>Firmaadresse</label>
-<input id="firmaadresse" type="text" placeholder="F.eks: Storgata 1, Oslo" />
+<input id="firmaadresse" type="text" />
 
 <label>Kundeadresse</label>
-<input id="kundeadresse" type="text" placeholder="F.eks: Karl Johans gate 10, Oslo" />
+<input id="kundeadresse" type="text" />
 
 <div class="checkbox-row">
   <input type="checkbox" id="turRetur" checked />
@@ -145,11 +135,9 @@
 <label>Pris per km (kr)</label>
 <input id="prisPerKm" type="number" value="15" />
 
-<!-- 4️⃣ BOMPENGER -->
 <label>Estimerte bompenger per dag (kr)</label>
 <input id="bomPerDag" type="number" />
 
-<!-- 5️⃣ ØVRIGE KOSTNADER -->
 <label>Avfall (kr)</label>
 <input id="avfall" type="number" value="0" />
 
@@ -159,7 +147,6 @@
 <label>HMS-forbruk per dag (kr)</label>
 <input id="hms" type="number" value="0" />
 
-<!-- 6️⃣ BEREGN + AI -->
 <button class="dark" onclick="beregn()">Beregn</button>
 <button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>
   Generer tilbudstekst
@@ -177,16 +164,9 @@
 
 </div>
 
-<!-- GOOGLE MAPS -->
-<script
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
-  async defer>
-</script>
-
 <script>
 let kalkyle = null;
 
-/* 🔹 AUTO-LAGRING */
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
 
@@ -202,26 +182,6 @@ beskrivelseEl.addEventListener("input", () => {
   toggleStartNy();
 });
 
-/* 🔹 TAB-STØTTE */
-beskrivelseEl.addEventListener("keydown", (e) => {
-  if (e.key === "Tab") {
-    e.preventDefault();
-    const start = beskrivelseEl.selectionStart;
-    const end = beskrivelseEl.selectionEnd;
-    const tab = "  ";
-
-    beskrivelseEl.value =
-      beskrivelseEl.value.substring(0, start) +
-      tab +
-      beskrivelseEl.value.substring(end);
-
-    beskrivelseEl.selectionStart =
-    beskrivelseEl.selectionEnd = start + tab.length;
-
-    localStorage.setItem("minpris_beskrivelse", beskrivelseEl.value);
-  }
-});
-
 function startNyBeskrivelse() {
   if (!confirm("Vil du slette og starte ny arbeidsbeskrivelse?")) return;
   beskrivelseEl.value = "";
@@ -229,17 +189,6 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
-/* AUTOCOMPLETE */
-function initAutocomplete() {
-  new google.maps.places.Autocomplete(firmaadresse, {
-    componentRestrictions: { country: "no" }
-  });
-  new google.maps.places.Autocomplete(kundeadresse, {
-    componentRestrictions: { country: "no" }
-  });
-}
-
-/* KM */
 async function beregnKm() {
   if (!firmaadresse.value || !kundeadresse.value) {
     alert("Fyll inn begge adresser");
@@ -261,7 +210,6 @@ async function beregnKm() {
   kmPerDag.value = km.toFixed(1);
 }
 
-/* BEREGNING */
 function beregn() {
   const timer =
     (beskrivelse.value.match(/(\d+)\s*t/gi) || [])
@@ -292,13 +240,22 @@ function beregn() {
 `Arbeidsomfang:
 ${timer} timer over ${dager} dag(er)
 
-Totalt eks. mva: ${Math.round(totalEks)} kr
+Totalpris (eks. mva):
+– Arbeid: ${Math.round(arbeid)} kr
+– Kjøring: ${Math.round(kjøring)} kr
+– Bom: ${Math.round(bom)} kr
+– HMS: ${Math.round(hmsTot)} kr
+– Avfall: ${avf} kr
+– Materiell: ${mat} kr
+--------------------
+Sum eks. mva: ${Math.round(totalEks)} kr
+
+Mva (25 %): ${Math.round(totalEks * 0.25)} kr
 Totalt inkl. mva: ${Math.round(totalInk)} kr`;
 
   aiBtn.disabled = false;
 }
 
-/* AI */
 async function genererTilbud() {
   tilbud.textContent = "Genererer tilbudstekst…";
 
@@ -312,7 +269,6 @@ async function genererTilbud() {
   tilbud.textContent = data.text || "Ingen tekst returnert";
 }
 
-/* KOPIER */
 function kopierTilbud() {
   if (!tilbud.textContent.trim()) {
     alert("Ingen tilbudstekst å kopiere");
