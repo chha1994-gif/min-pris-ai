@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8" />
-  <title>🏠 MinPris – tilbudskalkulator</title>
+  <title>MinPris – tilbudskalkulator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
@@ -19,6 +19,12 @@
       border-radius: 14px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
+
+    .title {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
     label {
       font-weight: 600;
       display: block;
@@ -94,7 +100,7 @@
 <body>
 <div class="box">
 
-<h1>🏠 MinPris – tilbudskalkulator</h1>
+<h1 class="title">MinPris – tilbudskalkulator</h1>
 
 <!-- 1️⃣ ARBEIDSBESKRIVELSE -->
 <label>Arbeidsbeskrivelse</label>
@@ -102,7 +108,7 @@
 <textarea
   id="beskrivelse"
   rows="4"
-  placeholder="Beskriv jobben, f.eks: bad - 24t riving, 10t sanering">
+  placeholder="Beskriv jobben, f.eks: bad – 25t riving, 8t sanering (Tips: bruk Enter for ny linje)">
 </textarea>
 
 <div class="start-new-row">
@@ -196,14 +202,13 @@ beskrivelseEl.addEventListener("input", () => {
   toggleStartNy();
 });
 
-/* 🔹 TAB-STØTTE I TEXTAREA */
+/* 🔹 TAB-STØTTE */
 beskrivelseEl.addEventListener("keydown", (e) => {
   if (e.key === "Tab") {
     e.preventDefault();
-
     const start = beskrivelseEl.selectionStart;
     const end = beskrivelseEl.selectionEnd;
-    const tab = "  "; // 2 mellomrom
+    const tab = "  ";
 
     beskrivelseEl.value =
       beskrivelseEl.value.substring(0, start) +
@@ -313,7 +318,6 @@ function kopierTilbud() {
     alert("Ingen tilbudstekst å kopiere");
     return;
   }
-
   navigator.clipboard.writeText(tilbud.textContent)
     .then(() => alert("Tilbudstekst kopiert 📋"));
 }
