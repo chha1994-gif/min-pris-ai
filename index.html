@@ -19,80 +19,25 @@
       border-radius: 14px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
-
-    .title {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-
-    label {
-      font-weight: 600;
-      display: block;
-      margin-top: 14px;
-    }
+    .title { text-align:center; margin-bottom:20px; }
+    label { font-weight:600; margin-top:14px; display:block; }
     input, textarea {
-      width: 100%;
-      padding: 12px;
-      margin-top: 6px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      font-size: 15px;
-      box-sizing: border-box;
+      width:100%; padding:12px; margin-top:6px;
+      border-radius:10px; border:1px solid #ccc;
     }
     button {
-      width: 100%;
-      padding: 14px;
-      margin-top: 14px;
-      font-size: 15px;
-      font-weight: 600;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
+      width:100%; padding:14px; margin-top:14px;
+      font-weight:600; border-radius:12px;
+      border:none; cursor:pointer;
     }
     .dark { background:#111827; color:white; }
     .blue { background:#2563eb; color:white; }
     .success { background:#16a34a; color:white; }
-
     pre {
       background:#f1f5f9;
       padding:14px;
       border-radius:10px;
       white-space:pre-wrap;
-      margin-top:10px;
-    }
-
-    .checkbox-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-      font-weight: 600;
-    }
-    .checkbox-row input {
-      width: auto;
-      margin: 0;
-    }
-
-    /* 🔹 Start ny-knapp */
-    .start-new-row {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 6px;
-    }
-    .start-new-btn {
-      background: #dc2626;
-      color: white;
-      font-size: 12px;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      opacity: 0.9;
-    }
-    .start-new-btn:hover {
-      opacity: 1;
-    }
-    .hidden {
-      display: none;
     }
   </style>
 </head>
@@ -100,68 +45,37 @@
 <body>
 <div class="box">
 
-<h1 class="title">MinPris – tilbudskalkulator</h1>
+<h1 class="title">🏠 MinPris – tilbudskalkulator</h1>
 
-<!-- 1️⃣ ARBEIDSBESKRIVELSE -->
-<label>Arbeidsbeskrivelse</label>
+<label>Arbeidsbeskrivelse (én oppgave per linje)</label>
+<textarea id="beskrivelse" rows="5"
+placeholder="Riving bad: 25t
+Sanering: 6–8t
+Montering: 12t"></textarea>
 
-<textarea
-  id="beskrivelse"
-  rows="4"
-  placeholder="Beskriv jobben, f.eks: bad – 25t riving, 8t sanering (Tips: bruk Enter for ny linje)">
-</textarea>
-
-<div class="start-new-row">
-  <button
-    type="button"
-    id="startNyBtn"
-    class="start-new-btn hidden"
-    onclick="startNyBeskrivelse()">
-    Slett og start ny beskrivelse
-  </button>
-</div>
-
-<!-- 2️⃣ TIMEPRIS -->
 <label>Timepris (kr)</label>
-<input id="timepris" type="number" />
-
-<!-- 3️⃣ ADRESSER -->
-<label>Firmaadresse</label>
-<input id="firmaadresse" type="text" placeholder="F.eks: Storgata 1, Oslo" />
-
-<label>Kundeadresse</label>
-<input id="kundeadresse" type="text" placeholder="F.eks: Karl Johans gate 10, Oslo" />
-
-<div class="checkbox-row">
-  <input type="checkbox" id="turRetur" checked />
-  <label for="turRetur">Tur / retur</label>
-</div>
-
-<button class="blue" onclick="beregnKm()">Beregn kilometer</button>
+<input id="timepris" type="number" value="750" />
 
 <label>Kilometer per dag</label>
-<input id="kmPerDag" type="number" />
+<input id="kmPerDag" type="number" value="0" />
 
 <label>Pris per km (kr)</label>
 <input id="prisPerKm" type="number" value="15" />
 
-<!-- 4️⃣ BOMPENGER -->
-<label>Estimerte bompenger per dag (kr)</label>
-<input id="bomPerDag" type="number" />
+<label>Bom per dag (kr)</label>
+<input id="bomPerDag" type="number" value="0" />
 
-<!-- 5️⃣ ØVRIGE KOSTNADER -->
+<label>HMS-forbruk per dag (kr)</label>
+<input id="hms" type="number" value="0" />
+
 <label>Avfall (kr)</label>
 <input id="avfall" type="number" value="0" />
 
 <label>Materiell / forbruk (kr)</label>
 <input id="materiell" type="number" value="0" />
 
-<label>HMS-forbruk per dag (kr)</label>
-<input id="hms" type="number" value="0" />
-
-<!-- 6️⃣ BEREGN + AI -->
 <button class="dark" onclick="beregn()">Beregn</button>
-<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>
+<button class="blue" onclick="genererTilbud()" id="aiBtn" disabled>
   Generer tilbudstekst
 </button>
 
@@ -171,155 +85,104 @@
 <h3>Tilbudstekst</h3>
 <pre id="tilbud"></pre>
 
-<button type="button" class="success" onclick="kopierTilbud()">
-  Kopier tilbudstekst
-</button>
+<button class="success" onclick="kopierTilbud()">Kopier tilbudstekst</button>
 
 </div>
-
-<!-- GOOGLE MAPS -->
-<script
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
-  async defer>
-</script>
 
 <script>
 let kalkyle = null;
 
-/* 🔹 AUTO-LAGRING */
-const beskrivelseEl = document.getElementById("beskrivelse");
-const startNyBtn = document.getElementById("startNyBtn");
-
-function toggleStartNy() {
-  startNyBtn.classList.toggle("hidden", !beskrivelseEl.value.trim());
+/* 🔹 Hent arbeid per linje */
+function hentArbeidslinjer(text) {
+  return text.split("\n").map(l => l.trim()).filter(Boolean).map(l => {
+    const m = l.match(/(.+?):?\s*(\d+(?:[.,]\d+)?)(?:\s*[-–]\s*(\d+(?:[.,]\d+)?))?\s*(t|timer)/i);
+    if (!m) return null;
+    const a = Number(m[2].replace(",", "."));
+    const b = m[3] ? Number(m[3].replace(",", ".")) : null;
+    return {
+      navn: m[1],
+      timer: b ? (a + b) / 2 : a
+    };
+  }).filter(Boolean);
 }
 
-beskrivelseEl.value = localStorage.getItem("minpris_beskrivelse") || "";
-toggleStartNy();
-
-beskrivelseEl.addEventListener("input", () => {
-  localStorage.setItem("minpris_beskrivelse", beskrivelseEl.value);
-  toggleStartNy();
-});
-
-/* 🔹 TAB-STØTTE */
-beskrivelseEl.addEventListener("keydown", (e) => {
-  if (e.key === "Tab") {
-    e.preventDefault();
-    const start = beskrivelseEl.selectionStart;
-    const end = beskrivelseEl.selectionEnd;
-    const tab = "  ";
-
-    beskrivelseEl.value =
-      beskrivelseEl.value.substring(0, start) +
-      tab +
-      beskrivelseEl.value.substring(end);
-
-    beskrivelseEl.selectionStart =
-    beskrivelseEl.selectionEnd = start + tab.length;
-
-    localStorage.setItem("minpris_beskrivelse", beskrivelseEl.value);
-  }
-});
-
-function startNyBeskrivelse() {
-  if (!confirm("Vil du slette og starte ny arbeidsbeskrivelse?")) return;
-  beskrivelseEl.value = "";
-  localStorage.removeItem("minpris_beskrivelse");
-  toggleStartNy();
-}
-
-/* AUTOCOMPLETE */
-function initAutocomplete() {
-  new google.maps.places.Autocomplete(firmaadresse, {
-    componentRestrictions: { country: "no" }
-  });
-  new google.maps.places.Autocomplete(kundeadresse, {
-    componentRestrictions: { country: "no" }
-  });
-}
-
-/* KM */
-async function beregnKm() {
-  if (!firmaadresse.value || !kundeadresse.value) {
-    alert("Fyll inn begge adresser");
-    return;
-  }
-
-  const res = await fetch("/api/route", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      start: firmaadresse.value,
-      end: kundeadresse.value
-    })
-  });
-
-  const data = await res.json();
-  let km = data.km;
-  if (turRetur.checked) km *= 2;
-  kmPerDag.value = km.toFixed(1);
-}
-
-/* BEREGNING */
 function beregn() {
-  const timer =
-    (beskrivelse.value.match(/(\d+)\s*t/gi) || [])
-      .map(x => Number(x.replace(/\D/g,"")))
-      .reduce((a,b)=>a+b,0);
+  const arbeidLinjer = hentArbeidslinjer(beskrivelse.value);
+  const tp = Number(timepris.value || 0);
 
+  const arbeidDetaljert = arbeidLinjer.map(a => ({
+    ...a,
+    pris: a.timer * tp
+  }));
+
+  const timer = arbeidDetaljert.reduce((s,a)=>s+a.timer,0);
   const dager = Math.max(1, Math.ceil(timer / 7.5));
 
-  const arbeid = timer * Number(timepris.value||0);
+  const arbeidSum = arbeidDetaljert.reduce((s,a)=>s+a.pris,0);
   const kjøring = dager * Number(kmPerDag.value||0) * Number(prisPerKm.value||0);
   const bom = dager * Number(bomPerDag.value||0);
   const hmsTot = dager * Number(hms.value||0);
   const avf = Number(avfall.value||0);
   const mat = Number(materiell.value||0);
 
-  const totalEks = arbeid + kjøring + bom + hmsTot + avf + mat;
-  const totalInk = totalEks * 1.25;
+  const totalEks = arbeidSum + kjøring + bom + hmsTot + avf + mat;
+  const mva = totalEks * 0.25;
+  const totalInk = totalEks + mva;
 
   kalkyle = {
     beskrivelse: beskrivelse.value,
+    arbeidDetaljert,
     timer,
     dager,
-    totalEksMva: totalEks,
-    totalInkMva: totalInk
+    timepris: tp,
+    arbeid: Math.round(arbeidSum),
+    kjøring: Math.round(kjøring),
+    bom: Math.round(bom),
+    avfall: avf,
+    materiell: mat,
+    hms: Math.round(hmsTot),
+    kmPerDag: Number(kmPerDag.value||0),
+    totalEksMva: Math.round(totalEks),
+    mva: Math.round(mva),
+    totalInkMva: Math.round(totalInk)
   };
 
-  resultat.textContent =
-`Arbeidsomfang:
-${timer} timer over ${dager} dag(er)
+  const arbeidTekst = arbeidDetaljert
+    .map(a=>`– ${a.navn}: ${a.timer.toFixed(1)} t × ${tp} kr = ${Math.round(a.pris)} kr`)
+    .join("\n");
 
-Totalt eks. mva: ${Math.round(totalEks)} kr
+  resultat.textContent =
+`Arbeid:
+${arbeidTekst}
+
+Andre kostnader:
+– Kjøring: ${Math.round(kjøring)} kr
+– Bom: ${Math.round(bom)} kr
+– HMS: ${Math.round(hmsTot)} kr
+– Avfall: ${avf} kr
+– Materiell: ${mat} kr
+
+Sum eks. mva: ${Math.round(totalEks)} kr
+Mva (25 %): ${Math.round(mva)} kr
 Totalt inkl. mva: ${Math.round(totalInk)} kr`;
 
   aiBtn.disabled = false;
 }
 
-/* AI */
 async function genererTilbud() {
-  tilbud.textContent = "Genererer tilbudstekst…";
-
+  tilbud.textContent = "Genererer tilbud…";
   const res = await fetch("/api/ai", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
     body: JSON.stringify(kalkyle)
   });
-
   const data = await res.json();
-  tilbud.textContent = data.text || "Ingen tekst returnert";
+  tilbud.textContent = data.text || "Ingen tekst generert.";
 }
 
-/* KOPIER */
 function kopierTilbud() {
-  if (!tilbud.textContent.trim()) {
-    alert("Ingen tilbudstekst å kopiere");
-    return;
-  }
-  navigator.clipboard.writeText(tilbud.textContent)
-    .then(() => alert("Tilbudstekst kopiert 📋"));
+  navigator.clipboard.writeText(tilbud.textContent);
+  alert("Tilbudstekst kopiert 📋");
 }
 </script>
 
