@@ -76,17 +76,30 @@
     }
     .hidden { display: none; }
 
-    .ekstra-rad {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 4px;
-      font-size: 14px;
+    /* === NY, FORBEDRET EKSTRA POST === */
+    .ekstra-item {
+      display: grid;
+      grid-template-columns: 1fr 110px 36px;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
     }
-    .ekstra-rad button {
-      width: auto;
-      padding: 2px 6px;
-      font-size: 12px;
-      margin-left: 8px;
+    .ekstra-item input {
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+    .ekstra-item .pris {
+      text-align: right;
+    }
+    .ekstra-item button {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 50%;
+      font-size: 16px;
+      background: #e5e7eb;
     }
   </style>
 </head>
@@ -144,10 +157,14 @@
 
 <div id="ekstraPoster"></div>
 
-<button type="button" class="blue" onclick="leggTilEkstraPost()">+ Legg til ekstra post</button>
+<button type="button" class="blue" onclick="leggTilEkstraPost()">
+  + Legg til ekstra post
+</button>
 
 <button class="dark" onclick="beregn()">Beregn</button>
-<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>Generer tilbudstekst</button>
+<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>
+  Generer tilbudstekst
+</button>
 
 <h3>Resultat</h3>
 <pre id="resultat"></pre>
@@ -155,7 +172,9 @@
 <h3>Tilbudstekst</h3>
 <pre id="tilbud"></pre>
 
-<button type="button" class="success" onclick="kopierTilbud()">Kopier tilbudstekst</button>
+<button type="button" class="success" onclick="kopierTilbud()">
+  Kopier tilbudstekst
+</button>
 
 </div>
 
@@ -197,12 +216,9 @@ window.initAutocomplete = function () {
   new google.maps.places.Autocomplete(kundeadresse, { componentRestrictions:{country:"no"} });
 };
 
-/* ===== EKSTRA POSTER ===== */
+/* ===== EKSTRA POSTER (NY) ===== */
 function leggTilEkstraPost() {
-  const navn = prompt("Hva gjelder posten?");
-  const pris = Number(prompt("Pris (kr):"));
-  if (!navn || !pris) return;
-  ekstraPoster.push({ navn, pris });
+  ekstraPoster.push({ navn: "", pris: 0 });
   visEkstraPoster();
 }
 
@@ -215,10 +231,18 @@ function visEkstraPoster() {
   const c = document.getElementById("ekstraPoster");
   c.innerHTML = "";
   ekstraPoster.forEach((p,i)=>{
-    c.innerHTML += `<div class="ekstra-rad">
-      <span>${p.navn}</span>
-      <span>${p.pris} kr <button onclick="fjernEkstraPost(${i})">✕</button></span>
-    </div>`;
+    c.innerHTML += `
+      <div class="ekstra-item">
+        <input type="text" placeholder="Navn på post"
+          value="${p.navn}"
+          oninput="ekstraPoster[${i}].navn = this.value">
+
+        <input type="number" class="pris" placeholder="Kr"
+          value="${p.pris || ""}"
+          oninput="ekstraPoster[${i}].pris = Number(this.value)">
+
+        <button onclick="fjernEkstraPost(${i})">✕</button>
+      </div>`;
   });
 }
 
@@ -238,16 +262,18 @@ async function beregnKm() {
 
 /* ===== BEREGNING ===== */
 function beregn() {
-  const timer = (beskrivelse.value.match(/(\d+)\s*t/gi)||[]).map(x=>+x.replace(/\D/g,"")).reduce((a,b)=>a+b,0);
-  const dager = Math.max(1, Math.ceil(timer/7.5));
+  const timer = (beskrivelse.value.match(/(\d+)\s*t/gi)||[])
+    .map(x=>+x.replace(/\D/g,""))
+    .reduce((a,b)=>a+b,0);
 
+  const dager = Math.max(1, Math.ceil(timer/7.5));
   const arbeid = timer*(+timepris.value||0);
   const kjøring = dager*(+kmPerDag.value||0)*(+prisPerKm.value||0);
   const bom = dager*(+bomPerDag.value||0);
   const hmsTot = dager*(+hms.value||0);
   const avf = +avfall.value||0;
   const mat = +materiell.value||0;
-  const ekstraSum = ekstraPoster.reduce((s,p)=>s+p.pris,0);
+  const ekstraSum = ekstraPoster.reduce((s,p)=>s+(+p.pris||0),0);
 
   const totalEks = arbeid+kjøring+bom+hmsTot+avf+mat+ekstraSum;
   const totalInk = totalEks*1.25;
