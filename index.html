@@ -89,9 +89,7 @@
       border-radius: 10px;
       border: 1px solid #ccc;
     }
-    .ekstra-item .pris {
-      text-align: right;
-    }
+    .ekstra-item .pris { text-align: right; }
     .ekstra-item button {
       width: 36px;
       height: 36px;
@@ -177,17 +175,27 @@
 
 </div>
 
-<!-- GOOGLE MAPS -->
-<script
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
-  async defer>
-</script>
-
 <script>
 let kalkyle = null;
 let ekstraPoster = [];
 
-/* ===== AUTOLAGRING + SLETT ===== */
+/* ===== PRO / GRATIS ===== */
+function harPro() {
+  return localStorage.getItem("minpris_pro") === "1";
+}
+
+if (new URLSearchParams(location.search).get("pro")) {
+  localStorage.setItem("minpris_pro", "1");
+}
+
+/* ===== STRIPE ===== */
+async function startStripeCheckout(source) {
+  const res = await fetch("/api/stripe/checkout?source=" + source);
+  const data = await res.json();
+  location.href = data.url;
+}
+
+/* ===== AUTOLAGRING ===== */
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
 
@@ -209,45 +217,43 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
-/* ===== GOOGLE AUTOCOMPLETE ===== */
-window.initAutocomplete = function () {
-  new google.maps.places.Autocomplete(firmaadresse, { componentRestrictions:{country:"no"} });
-  new google.maps.places.Autocomplete(kundeadresse, { componentRestrictions:{country:"no"} });
-};
-
 /* ===== EKSTRA POSTER ===== */
 function leggTilEkstraPost() {
-  ekstraPoster.push({ navn: "", pris: 0 });
+  ekstraPoster.push({ navn:"", pris:0 });
   visEkstraPoster();
 }
-
 function fjernEkstraPost(i) {
-  ekstraPoster.splice(i, 1);
+  ekstraPoster.splice(i,1);
   visEkstraPoster();
 }
-
 function visEkstraPoster() {
-  const c = document.getElementById("ekstraPoster");
+  const c = ekstraPoster.length
+    ? document.getElementById("ekstraPoster")
+    : document.getElementById("ekstraPoster");
   c.innerHTML = "";
   ekstraPoster.forEach((p,i)=>{
     c.innerHTML += `
       <div class="ekstra-item">
-        <input type="text" placeholder="Navn på post"
-          value="${p.navn}"
-          oninput="ekstraPoster[${i}].navn = this.value">
-
-        <input type="number" class="pris" placeholder="Kr"
-          value="${p.pris || ""}"
-          oninput="ekstraPoster[${i}].pris = Number(this.value)">
-
+        <input placeholder="Navn på post" value="${p.navn}"
+          oninput="ekstraPoster[${i}].navn=this.value">
+        <input class="pris" type="number" placeholder="Kr" value="${p.pris||""}"
+          oninput="ekstraPoster[${i}].pris=Number(this.value)">
         <button onclick="fjernEkstraPost(${i})">✕</button>
       </div>`;
   });
 }
 
-/* ===== KM ===== */
+/* ===== KM (GRATIS 1×) ===== */
 async function beregnKm() {
-  if (!firmaadresse.value || !kundeadresse.value) return alert("Fyll inn begge adresser");
+  if (!harPro()) {
+    if (localStorage.getItem("minpris_free_km_used"))
+      return startStripeCheckout("km");
+    localStorage.setItem("minpris_free_km_used","1");
+  }
+
+  if (!firmaadresse.value || !kundeadresse.value)
+    return alert("Fyll inn begge adresser");
+
   const res = await fetch("/api/route", {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
@@ -277,12 +283,7 @@ function beregn() {
   const totalEks = arbeid+kjøring+bom+hmsTot+avf+mat+ekstraSum;
   const totalInk = totalEks*1.25;
 
-  kalkyle = {
-    beskrivelse: beskrivelse.value,
-    timer, dager,
-    totalEksMva: totalEks,
-    totalInkMva: totalInk
-  };
+  kalkyle = { beskrivelse:beskrivelse.value, timer, dager, totalEksMva:totalEks, totalInkMva:totalInk };
 
   resultat.textContent =
 `Detaljert pris (eks. mva):
@@ -300,8 +301,14 @@ Totalt inkl. mva: ${totalInk} kr`;
   aiBtn.disabled = false;
 }
 
-/* ===== AI ===== */
+/* ===== AI (GRATIS 1×) ===== */
 async function genererTilbud() {
+  if (!harPro()) {
+    if (localStorage.getItem("minpris_free_ai_used"))
+      return startStripeCheckout("ai");
+    localStorage.setItem("minpris_free_ai_used","1");
+  }
+
   tilbud.textContent = "Genererer tilbudstekst…";
   const res = await fetch("/api/ai", {
     method:"POST",
