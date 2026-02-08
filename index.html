@@ -179,7 +179,7 @@
 let kalkyle = null;
 let ekstraPoster = [];
 
-/* ===== STRIPE / PRO (NYTT, ISOLERT) ===== */
+/* ===== PRO / STRIPE ===== */
 function harPro() {
   return localStorage.getItem("minpris_pro") === "1";
 }
@@ -191,6 +191,10 @@ function merkGratisBrukt(type) {
 }
 async function startStripeCheckout(source) {
   const res = await fetch("/api/stripe/checkout?source=" + source);
+  if (!res.ok) {
+    alert("Stripe-feil. Sjekk at STRIPE_SECRET_KEY og STRIPE_PRICE_ID er satt, og at du har redeployet.");
+    return;
+  }
   const data = await res.json();
   location.href = data.url;
 }
