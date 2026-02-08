@@ -76,6 +76,7 @@
     }
     .hidden { display: none; }
 
+    /* EKSTRA POSTER */
     .ekstra-item {
       display: grid;
       grid-template-columns: 1fr 110px 36px;
@@ -175,34 +176,23 @@
 
 </div>
 
+<!-- GOOGLE MAPS – VIKTIG -->
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
+  async defer>
+</script>
+
 <script>
 let kalkyle = null;
 let ekstraPoster = [];
 
-/* ===== PRO / GRATIS ===== */
-function harPro() {
-  return localStorage.getItem("minpris_pro") === "1";
-}
-
-if (new URLSearchParams(location.search).get("pro")) {
-  localStorage.setItem("minpris_pro", "1");
-}
-
-/* ===== STRIPE ===== */
-async function startStripeCheckout(source) {
-  const res = await fetch("/api/stripe/checkout?source=" + source);
-  const data = await res.json();
-  location.href = data.url;
-}
-
-/* ===== AUTOLAGRING ===== */
+/* AUTOLAGRING */
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
 
 function toggleStartNy() {
   startNyBtn.classList.toggle("hidden", !beskrivelseEl.value.trim());
 }
-
 beskrivelseEl.value = localStorage.getItem("minpris_beskrivelse") || "";
 beskrivelseEl.addEventListener("input", () => {
   localStorage.setItem("minpris_beskrivelse", beskrivelseEl.value);
@@ -217,7 +207,13 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
-/* ===== EKSTRA POSTER ===== */
+/* GOOGLE AUTOCOMPLETE */
+window.initAutocomplete = function () {
+  new google.maps.places.Autocomplete(firmaadresse, { componentRestrictions:{country:"no"} });
+  new google.maps.places.Autocomplete(kundeadresse, { componentRestrictions:{country:"no"} });
+};
+
+/* EKSTRA POSTER */
 function leggTilEkstraPost() {
   ekstraPoster.push({ navn:"", pris:0 });
   visEkstraPoster();
@@ -227,30 +223,22 @@ function fjernEkstraPost(i) {
   visEkstraPoster();
 }
 function visEkstraPoster() {
-  const c = ekstraPoster.length
-    ? document.getElementById("ekstraPoster")
-    : document.getElementById("ekstraPoster");
+  const c = document.getElementById("ekstraPoster");
   c.innerHTML = "";
   ekstraPoster.forEach((p,i)=>{
     c.innerHTML += `
       <div class="ekstra-item">
         <input placeholder="Navn på post" value="${p.navn}"
           oninput="ekstraPoster[${i}].navn=this.value">
-        <input class="pris" type="number" placeholder="Kr" value="${p.pris||""}"
+        <input type="number" class="pris" placeholder="Kr" value="${p.pris||""}"
           oninput="ekstraPoster[${i}].pris=Number(this.value)">
         <button onclick="fjernEkstraPost(${i})">✕</button>
       </div>`;
   });
 }
 
-/* ===== KM (GRATIS 1×) ===== */
+/* KM */
 async function beregnKm() {
-  if (!harPro()) {
-    if (localStorage.getItem("minpris_free_km_used"))
-      return startStripeCheckout("km");
-    localStorage.setItem("minpris_free_km_used","1");
-  }
-
   if (!firmaadresse.value || !kundeadresse.value)
     return alert("Fyll inn begge adresser");
 
@@ -265,7 +253,7 @@ async function beregnKm() {
   kmPerDag.value = km.toFixed(1);
 }
 
-/* ===== BEREGNING ===== */
+/* BEREGNING */
 function beregn() {
   const timer = (beskrivelse.value.match(/(\d+)\s*t/gi)||[])
     .map(x=>+x.replace(/\D/g,""))
@@ -301,14 +289,8 @@ Totalt inkl. mva: ${totalInk} kr`;
   aiBtn.disabled = false;
 }
 
-/* ===== AI (GRATIS 1×) ===== */
+/* AI */
 async function genererTilbud() {
-  if (!harPro()) {
-    if (localStorage.getItem("minpris_free_ai_used"))
-      return startStripeCheckout("ai");
-    localStorage.setItem("minpris_free_ai_used","1");
-  }
-
   tilbud.textContent = "Genererer tilbudstekst…";
   const res = await fetch("/api/ai", {
     method:"POST",
