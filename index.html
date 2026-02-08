@@ -73,6 +73,7 @@
       padding: 6px 10px;
       border-radius: 8px;
       cursor: pointer;
+      opacity: 0.9;
     }
     .hidden { display: none; }
 
@@ -189,7 +190,6 @@ beskrivelseEl.addEventListener("input", () => {
 });
 window.addEventListener("load", toggleStartNy);
 
-/* SLETT */
 function startNyBeskrivelse() {
   if (!confirm("Vil du slette og starte ny arbeidsbeskrivelse?")) return;
   beskrivelseEl.value = "";
@@ -197,7 +197,6 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
-/* GOOGLE AUTOCOMPLETE */
 window.initAutocomplete = function () {
   new google.maps.places.Autocomplete(firmaadresse, {
     componentRestrictions: { country: "no" }
@@ -270,18 +269,10 @@ function beregn() {
   const totalInk = totalEks*1.25;
 
   kalkyle = {
-    beskrivelse:
-      ekstraPoster.length
-        ? beskrivelse.value+"\n\nEkstra poster:\n"+
-          ekstraPoster.map(p=>`– ${p.navn}: ${p.pris} kr`).join("\n")
-        : beskrivelse.value,
+    beskrivelse: beskrivelse.value,
     timer, dager,
-    timepris:+timepris.value,
-    arbeid, kjøring, bom,
-    avfall:avf, materiell:mat, hms:hmsTot,
-    kmPerDag:+kmPerDag.value,
-    totalEksMva:totalEks,
-    totalInkMva:totalInk
+    totalEksMva: totalEks,
+    totalInkMva: totalInk
   };
 
   resultat.textContent =
@@ -294,17 +285,11 @@ Detaljert pris (eks. mva):
 – Bom: ${Math.round(bom)} kr
 – HMS: ${Math.round(hmsTot)} kr
 – Avfall totalt: ${avf} kr
-– Materiell/forbruk totalt: ${mat} kr`;
+– Materiell/forbruk totalt: ${mat} kr
+${ekstraPoster.length ? "\nEkstra poster:" : ""}
+${ekstraPoster.map(p => – ${p.navn}: ${p.pris} kr).join("\n")}
 
-  if (ekstraPoster.length) {
-    resultat.textContent += \nEkstra poster:;
-    ekstraPoster.forEach(p => {
-      resultat.textContent += \n– ${p.navn}: ${p.pris} kr;
-    });
-  }
-
-  resultat.textContent +=
-`\n--------------------
+--------------------
 Sum eks. mva: ${Math.round(totalEks)} kr
 Mva (25 %): ${Math.round(totalEks * 0.25)} kr
 Totalt inkl. mva: ${Math.round(totalInk)} kr`;
@@ -324,14 +309,8 @@ async function genererTilbud() {
   tilbud.textContent = data.text || "Ingen tekst returnert";
 }
 
-/* KOPIER */
 function kopierTilbud() {
-  if (!tilbud.textContent.trim()) {
-    alert("Ingen tilbudstekst å kopiere");
-    return;
-  }
-  navigator.clipboard.writeText(tilbud.textContent)
-    .then(() => alert("Tilbudstekst kopiert 📋"));
+  navigator.clipboard.writeText(tilbud.textContent);
 }
 </script>
 
