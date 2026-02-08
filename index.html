@@ -76,7 +76,6 @@
     }
     .hidden { display: none; }
 
-    /* === NY, FORBEDRET EKSTRA POST === */
     .ekstra-item {
       display: grid;
       grid-template-columns: 1fr 110px 36px;
@@ -111,7 +110,7 @@
 
 <label>Arbeidsbeskrivelse</label>
 <textarea id="beskrivelse" rows="4"
-  placeholder="Beskriv jobben, f.eks: bad – 25t riving, 8t sanering"></textarea>
+  placeholder="Beskriv jobben, f.eks: bad - 25t riving, 8t sanering (tips: trykk «enter» for ny linje)"></textarea>
 
 <div class="start-new-row">
   <button type="button" id="startNyBtn"
@@ -216,7 +215,7 @@ window.initAutocomplete = function () {
   new google.maps.places.Autocomplete(kundeadresse, { componentRestrictions:{country:"no"} });
 };
 
-/* ===== EKSTRA POSTER (NY) ===== */
+/* ===== EKSTRA POSTER ===== */
 function leggTilEkstraPost() {
   ekstraPoster.push({ navn: "", pris: 0 });
   visEkstraPoster();
