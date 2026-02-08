@@ -76,7 +76,6 @@
     }
     .hidden { display: none; }
 
-    /* EKSTRA POSTER */
     .ekstra-item {
       display: grid;
       grid-template-columns: 1fr 110px 36px;
@@ -155,14 +154,10 @@
 
 <div id="ekstraPoster"></div>
 
-<button type="button" class="blue" onclick="leggTilEkstraPost()">
-  + Legg til ekstra post
-</button>
+<button type="button" class="blue" onclick="leggTilEkstraPost()">+ Legg til ekstra post</button>
 
 <button class="dark" onclick="beregn()">Beregn</button>
-<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>
-  Generer tilbudstekst
-</button>
+<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>Generer tilbudstekst</button>
 
 <h3>Resultat</h3>
 <pre id="resultat"></pre>
@@ -170,13 +165,11 @@
 <h3>Tilbudstekst</h3>
 <pre id="tilbud"></pre>
 
-<button type="button" class="success" onclick="kopierTilbud()">
-  Kopier tilbudstekst
-</button>
+<button type="button" class="success" onclick="kopierTilbud()">Kopier tilbudstekst</button>
 
 </div>
 
-<!-- GOOGLE MAPS – VIKTIG -->
+<!-- GOOGLE MAPS -->
 <script
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
   async defer>
@@ -186,10 +179,28 @@
 let kalkyle = null;
 let ekstraPoster = [];
 
-/* AUTOLAGRING */
+/* ===== STRIPE / PRO (NYTT, ISOLERT) ===== */
+function harPro() {
+  return localStorage.getItem("minpris_pro") === "1";
+}
+function gratisBrukt(type) {
+  return localStorage.getItem("minpris_free_" + type) === "1";
+}
+function merkGratisBrukt(type) {
+  localStorage.setItem("minpris_free_" + type, "1");
+}
+async function startStripeCheckout(source) {
+  const res = await fetch("/api/stripe/checkout?source=" + source);
+  const data = await res.json();
+  location.href = data.url;
+}
+if (new URLSearchParams(location.search).get("pro")) {
+  localStorage.setItem("minpris_pro", "1");
+}
+
+/* ===== AUTOLAGRING ===== */
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
-
 function toggleStartNy() {
   startNyBtn.classList.toggle("hidden", !beskrivelseEl.value.trim());
 }
@@ -207,13 +218,13 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
-/* GOOGLE AUTOCOMPLETE */
+/* ===== GOOGLE AUTOCOMPLETE ===== */
 window.initAutocomplete = function () {
   new google.maps.places.Autocomplete(firmaadresse, { componentRestrictions:{country:"no"} });
   new google.maps.places.Autocomplete(kundeadresse, { componentRestrictions:{country:"no"} });
 };
 
-/* EKSTRA POSTER */
+/* ===== EKSTRA POSTER ===== */
 function leggTilEkstraPost() {
   ekstraPoster.push({ navn:"", pris:0 });
   visEkstraPoster();
@@ -237,8 +248,13 @@ function visEkstraPoster() {
   });
 }
 
-/* KM */
+/* ===== KM (GRATIS 1×) ===== */
 async function beregnKm() {
+  if (!harPro()) {
+    if (gratisBrukt("km")) return startStripeCheckout("km");
+    merkGratisBrukt("km");
+  }
+
   if (!firmaadresse.value || !kundeadresse.value)
     return alert("Fyll inn begge adresser");
 
@@ -253,7 +269,7 @@ async function beregnKm() {
   kmPerDag.value = km.toFixed(1);
 }
 
-/* BEREGNING */
+/* ===== BEREGNING ===== */
 function beregn() {
   const timer = (beskrivelse.value.match(/(\d+)\s*t/gi)||[])
     .map(x=>+x.replace(/\D/g,""))
@@ -289,8 +305,13 @@ Totalt inkl. mva: ${totalInk} kr`;
   aiBtn.disabled = false;
 }
 
-/* AI */
+/* ===== AI (GRATIS 1×) ===== */
 async function genererTilbud() {
+  if (!harPro()) {
+    if (gratisBrukt("ai")) return startStripeCheckout("ai");
+    merkGratisBrukt("ai");
+  }
+
   tilbud.textContent = "Genererer tilbudstekst…";
   const res = await fetch("/api/ai", {
     method:"POST",
