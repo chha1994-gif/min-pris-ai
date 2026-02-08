@@ -1,3 +1,5 @@
+
+Du har sendt
 <!DOCTYPE html>
 <html lang="no">
 <head>
@@ -144,14 +146,10 @@
 
 <div id="ekstraPoster"></div>
 
-<button type="button" class="blue" onclick="leggTilEkstraPost()">
-  + Legg til ekstra post
-</button>
+<button type="button" class="blue" onclick="leggTilEkstraPost()">+ Legg til ekstra post</button>
 
 <button class="dark" onclick="beregn()">Beregn</button>
-<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>
-  Generer tilbudstekst
-</button>
+<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>Generer tilbudstekst</button>
 
 <h3>Resultat</h3>
 <pre id="resultat"></pre>
@@ -159,9 +157,7 @@
 <h3>Tilbudstekst</h3>
 <pre id="tilbud"></pre>
 
-<button type="button" class="success" onclick="kopierTilbud()">
-  Kopier tilbudstekst
-</button>
+<button type="button" class="success" onclick="kopierTilbud()">Kopier tilbudstekst</button>
 
 </div>
 
@@ -199,21 +195,15 @@ function startNyBeskrivelse() {
 
 /* ===== GOOGLE AUTOCOMPLETE ===== */
 window.initAutocomplete = function () {
-  new google.maps.places.Autocomplete(firmaadresse, {
-    componentRestrictions: { country: "no" }
-  });
-  new google.maps.places.Autocomplete(kundeadresse, {
-    componentRestrictions: { country: "no" }
-  });
+  new google.maps.places.Autocomplete(firmaadresse, { componentRestrictions:{country:"no"} });
+  new google.maps.places.Autocomplete(kundeadresse, { componentRestrictions:{country:"no"} });
 };
 
 /* ===== EKSTRA POSTER ===== */
 function leggTilEkstraPost() {
   const navn = prompt("Hva gjelder posten?");
-  if (!navn) return;
   const pris = Number(prompt("Pris (kr):"));
-  if (!pris) return;
-
+  if (!navn || !pris) return;
   ekstraPoster.push({ navn, pris });
   visEkstraPoster();
 }
@@ -226,27 +216,21 @@ function fjernEkstraPost(i) {
 function visEkstraPoster() {
   const c = document.getElementById("ekstraPoster");
   c.innerHTML = "";
-  ekstraPoster.forEach((p, i) => {
-    const r = document.createElement("div");
-    r.className = "ekstra-rad";
-    r.innerHTML = `
+  ekstraPoster.forEach((p,i)=>{
+    c.innerHTML += `<div class="ekstra-rad">
       <span>${p.navn}</span>
       <span>${p.pris} kr <button onclick="fjernEkstraPost(${i})">✕</button></span>
-    `;
-    c.appendChild(r);
+    </div>`;
   });
 }
 
 /* ===== KM ===== */
 async function beregnKm() {
-  if (!firmaadresse.value || !kundeadresse.value) {
-    alert("Fyll inn begge adresser");
-    return;
-  }
+  if (!firmaadresse.value || !kundeadresse.value) return alert("Fyll inn begge adresser");
   const res = await fetch("/api/route", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ start: firmaadresse.value, end: kundeadresse.value })
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ start:firmaadresse.value, end:kundeadresse.value })
   });
   const data = await res.json();
   let km = data.km;
@@ -256,62 +240,39 @@ async function beregnKm() {
 
 /* ===== BEREGNING ===== */
 function beregn() {
-  const timer =
-    (beskrivelse.value.match(/(\d+)\s*t/gi) || [])
-      .map(x => Number(x.replace(/\D/g,"")))
-      .reduce((a,b)=>a+b,0);
+  const timer = (beskrivelse.value.match(/(\d+)\s*t/gi)||[]).map(x=>+x.replace(/\D/g,"")).reduce((a,b)=>a+b,0);
+  const dager = Math.max(1, Math.ceil(timer/7.5));
 
-  const dager = Math.max(1, Math.ceil(timer / 7.5));
-
-  const arbeid = timer * (+timepris.value || 0);
-  const kjøring = dager * (+kmPerDag.value || 0) * (+prisPerKm.value || 0);
-  const bom = dager * (+bomPerDag.value || 0);
-  const hmsTot = dager * (+hms.value || 0);
-  const avf = +avfall.value || 0;
-  const mat = +materiell.value || 0;
+  const arbeid = timer*(+timepris.value||0);
+  const kjøring = dager*(+kmPerDag.value||0)*(+prisPerKm.value||0);
+  const bom = dager*(+bomPerDag.value||0);
+  const hmsTot = dager*(+hms.value||0);
+  const avf = +avfall.value||0;
+  const mat = +materiell.value||0;
   const ekstraSum = ekstraPoster.reduce((s,p)=>s+p.pris,0);
 
-  const totalEks = arbeid + kjøring + bom + hmsTot + avf + mat + ekstraSum;
-  const totalInk = totalEks * 1.25;
+  const totalEks = arbeid+kjøring+bom+hmsTot+avf+mat+ekstraSum;
+  const totalInk = totalEks*1.25;
 
   kalkyle = {
-    beskrivelse:
-      ekstraPoster.length
-        ? beskrivelse.value +
-          "\n\nEkstra poster:\n" +
-          ekstraPoster.map(p => – ${p.navn}: ${p.pris} kr).join("\n")
-        : beskrivelse.value,
-    timer,
-    dager,
-    timepris: +timepris.value || 0,
-    arbeid,
-    kjøring,
-    bom,
-    avfall: avf,
-    materiell: mat,
-    hms: hmsTot,
-    kmPerDag: +kmPerDag.value || 0,
+    beskrivelse: beskrivelse.value,
+    timer, dager,
     totalEksMva: totalEks,
     totalInkMva: totalInk
   };
 
   resultat.textContent =
-`Arbeidsomfang:
-${timer} timer over ${dager} dag(er)
+`Detaljert pris (eks. mva):
+– Arbeid: ${arbeid} kr
+– Kjøring: ${kjøring} kr
+– Bom: ${bom} kr
+– HMS: ${hmsTot} kr
+– Avfall: ${avf} kr
+– Materiell: ${mat} kr
+${ekstraPoster.map(p=>`– ${p.navn}: ${p.pris} kr`).join("\n")}
 
-Detaljert pris (eks. mva):
-– Arbeid: ${Math.round(arbeid)} kr
-– Kjøring: ${Math.round(kjøring)} kr
-– Bom: ${Math.round(bom)} kr
-– HMS: ${Math.round(hmsTot)} kr
-– Avfall totalt: ${avf} kr
-– Materiell/forbruk totalt: ${mat} kr
-${ekstraPoster.length ? "\nEkstra poster:\n" + ekstraPoster.map(p=>`– ${p.navn}: ${p.pris} kr`).join("\n") : ""}
-
---------------------
-Sum eks. mva: ${Math.round(totalEks)} kr
-Mva (25 %): ${Math.round(totalEks * 0.25)} kr
-Totalt inkl. mva: ${Math.round(totalInk)} kr`;
+Sum eks. mva: ${totalEks} kr
+Totalt inkl. mva: ${totalInk} kr`;
 
   aiBtn.disabled = false;
 }
@@ -322,20 +283,14 @@ async function genererTilbud() {
   const res = await fetch("/api/ai", {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(kalkyle)
+    body:JSON.stringify(kalkyle)
   });
   const data = await res.json();
   tilbud.textContent = data.text || "Ingen tekst returnert";
 }
 
-/* ===== KOPIER ===== */
 function kopierTilbud() {
-  if (!tilbud.textContent.trim()) {
-    alert("Ingen tilbudstekst å kopiere");
-    return;
-  }
-  navigator.clipboard.writeText(tilbud.textContent)
-    .then(() => alert("Tilbudstekst kopiert 📋"));
+  navigator.clipboard.writeText(tilbud.textContent);
 }
 </script>
 
