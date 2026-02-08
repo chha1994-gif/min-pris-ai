@@ -73,7 +73,6 @@
       padding: 6px 10px;
       border-radius: 8px;
       cursor: pointer;
-      opacity: 0.9;
     }
     .hidden { display: none; }
 
@@ -188,7 +187,6 @@ beskrivelseEl.addEventListener("input", () => {
   localStorage.setItem("minpris_beskrivelse", beskrivelseEl.value);
   toggleStartNy();
 });
-
 window.addEventListener("load", toggleStartNy);
 
 /* SLETT */
@@ -199,7 +197,7 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
-/* GOOGLE AUTOCOMPLETE – KRITISK */
+/* GOOGLE AUTOCOMPLETE */
 window.initAutocomplete = function () {
   new google.maps.places.Autocomplete(firmaadresse, {
     componentRestrictions: { country: "no" }
@@ -287,7 +285,28 @@ function beregn() {
   };
 
   resultat.textContent =
-`Sum eks. mva: ${Math.round(totalEks)} kr
+`Arbeidsomfang:
+${timer} timer over ${dager} dag(er)
+
+Detaljert pris (eks. mva):
+– Arbeid: ${Math.round(arbeid)} kr
+– Kjøring: ${Math.round(kjøring)} kr
+– Bom: ${Math.round(bom)} kr
+– HMS: ${Math.round(hmsTot)} kr
+– Avfall totalt: ${avf} kr
+– Materiell/forbruk totalt: ${mat} kr`;
+
+  if (ekstraPoster.length) {
+    resultat.textContent += \nEkstra poster:;
+    ekstraPoster.forEach(p => {
+      resultat.textContent += \n– ${p.navn}: ${p.pris} kr;
+    });
+  }
+
+  resultat.textContent +=
+`\n--------------------
+Sum eks. mva: ${Math.round(totalEks)} kr
+Mva (25 %): ${Math.round(totalEks * 0.25)} kr
 Totalt inkl. mva: ${Math.round(totalInk)} kr`;
 
   aiBtn.disabled = false;
@@ -307,7 +326,12 @@ async function genererTilbud() {
 
 /* KOPIER */
 function kopierTilbud() {
-  navigator.clipboard.writeText(tilbud.textContent);
+  if (!tilbud.textContent.trim()) {
+    alert("Ingen tilbudstekst å kopiere");
+    return;
+  }
+  navigator.clipboard.writeText(tilbud.textContent)
+    .then(() => alert("Tilbudstekst kopiert 📋"));
 }
 </script>
 
