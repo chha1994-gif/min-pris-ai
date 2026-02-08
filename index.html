@@ -143,7 +143,6 @@
 <label>HMS-forbruk per dag (kr)</label>
 <input id="hms" type="number" value="0" />
 
-<!-- EKSTRA POSTER -->
 <div id="ekstraPoster"></div>
 
 <button type="button" class="blue" onclick="leggTilEkstraPost()">
@@ -185,13 +184,14 @@ function toggleStartNy() {
 }
 
 beskrivelseEl.value = localStorage.getItem("minpris_beskrivelse") || "";
-toggleStartNy();
-
 beskrivelseEl.addEventListener("input", () => {
   localStorage.setItem("minpris_beskrivelse", beskrivelseEl.value);
   toggleStartNy();
 });
 
+window.addEventListener("load", toggleStartNy);
+
+/* SLETT */
 function startNyBeskrivelse() {
   if (!confirm("Vil du slette og starte ny arbeidsbeskrivelse?")) return;
   beskrivelseEl.value = "";
@@ -199,15 +199,15 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
-/* AUTOCOMPLETE */
-function initAutocomplete() {
+/* GOOGLE AUTOCOMPLETE – KRITISK */
+window.initAutocomplete = function () {
   new google.maps.places.Autocomplete(firmaadresse, {
     componentRestrictions: { country: "no" }
   });
   new google.maps.places.Autocomplete(kundeadresse, {
     componentRestrictions: { country: "no" }
   });
-}
+};
 
 /* EKSTRA POSTER */
 function leggTilEkstraPost() {
@@ -243,16 +243,11 @@ async function beregnKm() {
     alert("Fyll inn begge adresser");
     return;
   }
-
   const res = await fetch("/api/route", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      start: firmaadresse.value,
-      end: kundeadresse.value
-    })
+    body: JSON.stringify({ start: firmaadresse.value, end: kundeadresse.value })
   });
-
   const data = await res.json();
   let km = data.km;
   if (turRetur.checked) km *= 2;
@@ -261,64 +256,38 @@ async function beregnKm() {
 
 /* BEREGNING */
 function beregn() {
-  const timer =
-    (beskrivelse.value.match(/(\d+)\s*t/gi) || [])
-      .map(x => Number(x.replace(/\D/g,"")))
-      .reduce((a,b)=>a+b,0);
+  const timer = (beskrivelse.value.match(/(\d+)\s*t/gi)||[])
+    .map(x=>+x.replace(/\D/g,"")).reduce((a,b)=>a+b,0);
+  const dager = Math.max(1, Math.ceil(timer/7.5));
 
-  const dager = Math.max(1, Math.ceil(timer / 7.5));
+  const arbeid = timer*(+timepris.value||0);
+  const kjøring = dager*(+kmPerDag.value||0)*(+prisPerKm.value||0);
+  const bom = dager*(+bomPerDag.value||0);
+  const hmsTot = dager*(+hms.value||0);
+  const avf = +avfall.value||0;
+  const mat = +materiell.value||0;
+  const ekstraSum = ekstraPoster.reduce((s,p)=>s+p.pris,0);
 
-  const arbeid = timer * Number(timepris.value||0);
-  const kjøring = dager * Number(kmPerDag.value||0) * Number(prisPerKm.value||0);
-  const bom = dager * Number(bomPerDag.value||0);
-  const hmsTot = dager * Number(hms.value||0);
-  const avf = Number(avfall.value||0);
-  const mat = Number(materiell.value||0);
-  const ekstraSum = ekstraPoster.reduce((s,p)=>s + Number(p.pris||0), 0);
-
-  const totalEks = arbeid + kjøring + bom + hmsTot + avf + mat + ekstraSum;
-  const totalInk = totalEks * 1.25;
-
-  const beskrivelseMedEkstra =
-    ekstraPoster.length
-      ? beskrivelse.value +
-        "\n\nEkstra poster:\n" +
-        ekstraPoster.map(p => – ${p.navn}: ${p.pris} kr).join("\n")
-      : beskrivelse.value;
+  const totalEks = arbeid+kjøring+bom+hmsTot+avf+mat+ekstraSum;
+  const totalInk = totalEks*1.25;
 
   kalkyle = {
-    beskrivelse: beskrivelseMedEkstra,
-    timer,
-    dager,
-    timepris: Number(timepris.value||0),
-    arbeid,
-    kjøring,
-    bom,
-    avfall: avf,
-    materiell: mat,
-    hms: hmsTot,
-    kmPerDag: Number(kmPerDag.value||0),
-    totalEksMva: totalEks,
-    totalInkMva: totalInk
+    beskrivelse:
+      ekstraPoster.length
+        ? beskrivelse.value+"\n\nEkstra poster:\n"+
+          ekstraPoster.map(p=>`– ${p.navn}: ${p.pris} kr`).join("\n")
+        : beskrivelse.value,
+    timer, dager,
+    timepris:+timepris.value,
+    arbeid, kjøring, bom,
+    avfall:avf, materiell:mat, hms:hmsTot,
+    kmPerDag:+kmPerDag.value,
+    totalEksMva:totalEks,
+    totalInkMva:totalInk
   };
 
   resultat.textContent =
-`Arbeidsomfang:
-${timer} timer over ${dager} dag(er)
-
-Totalpris (eks. mva):
-– Arbeid: ${Math.round(arbeid)} kr
-– Kjøring: ${Math.round(kjøring)} kr
-– Bom: ${Math.round(bom)} kr
-– HMS: ${Math.round(hmsTot)} kr
-– Avfall totalt: ${avf} kr
-– Materiell/forbruk totalt: ${mat} kr
-${ekstraPoster.length ? "\nEkstra poster:" : ""}
-${ekstraPoster.map(p => – ${p.navn}: ${p.pris} kr).join("\n")}
-
---------------------
-Sum eks. mva: ${Math.round(totalEks)} kr
-Mva (25 %): ${Math.round(totalEks * 0.25)} kr
+`Sum eks. mva: ${Math.round(totalEks)} kr
 Totalt inkl. mva: ${Math.round(totalInk)} kr`;
 
   aiBtn.disabled = false;
@@ -327,25 +296,18 @@ Totalt inkl. mva: ${Math.round(totalInk)} kr`;
 /* AI */
 async function genererTilbud() {
   tilbud.textContent = "Genererer tilbudstekst…";
-
   const res = await fetch("/api/ai", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
     body: JSON.stringify(kalkyle)
   });
-
   const data = await res.json();
   tilbud.textContent = data.text || "Ingen tekst returnert";
 }
 
 /* KOPIER */
 function kopierTilbud() {
-  if (!tilbud.textContent.trim()) {
-    alert("Ingen tilbudstekst å kopiere");
-    return;
-  }
-  navigator.clipboard.writeText(tilbud.textContent)
-    .then(() => alert("Tilbudstekst kopiert 📋"));
+  navigator.clipboard.writeText(tilbud.textContent);
 }
 </script>
 
