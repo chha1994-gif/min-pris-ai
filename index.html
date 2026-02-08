@@ -73,7 +73,6 @@
       padding: 6px 10px;
       border-radius: 8px;
       cursor: pointer;
-      opacity: 0.9;
     }
     .hidden { display: none; }
 
@@ -102,7 +101,9 @@
   placeholder="Beskriv jobben, f.eks: bad – 25t riving, 8t sanering"></textarea>
 
 <div class="start-new-row">
-  <button type="button" id="startNyBtn"
+  <button
+    type="button"
+    id="startNyBtn"
     class="start-new-btn hidden"
     onclick="startNyBeskrivelse()">
     Slett og start ny beskrivelse
@@ -166,6 +167,7 @@
 
 </div>
 
+<!-- GOOGLE MAPS -->
 <script
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
   async defer>
@@ -175,7 +177,7 @@
 let kalkyle = null;
 let ekstraPoster = [];
 
-/* AUTOLAGRING */
+/* ================= AUTOLAGRING + SLETT ================= */
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
 
@@ -188,6 +190,7 @@ beskrivelseEl.addEventListener("input", () => {
   localStorage.setItem("minpris_beskrivelse", beskrivelseEl.value);
   toggleStartNy();
 });
+
 window.addEventListener("load", toggleStartNy);
 
 function startNyBeskrivelse() {
@@ -197,6 +200,7 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
+/* ================= GOOGLE AUTOCOMPLETE (KRITISK) ================= */
 window.initAutocomplete = function () {
   new google.maps.places.Autocomplete(firmaadresse, {
     componentRestrictions: { country: "no" }
@@ -205,113 +209,6 @@ window.initAutocomplete = function () {
     componentRestrictions: { country: "no" }
   });
 };
-
-/* EKSTRA POSTER */
-function leggTilEkstraPost() {
-  const navn = prompt("Hva gjelder posten?");
-  const pris = Number(prompt("Pris (kr):"));
-  if (!navn || !pris) return;
-  ekstraPoster.push({ navn, pris });
-  visEkstraPoster();
-}
-
-function fjernEkstraPost(i) {
-  ekstraPoster.splice(i, 1);
-  visEkstraPoster();
-}
-
-function visEkstraPoster() {
-  const c = document.getElementById("ekstraPoster");
-  c.innerHTML = "";
-  ekstraPoster.forEach((p, i) => {
-    const r = document.createElement("div");
-    r.className = "ekstra-rad";
-    r.innerHTML = `
-      <span>${p.navn}</span>
-      <span>${p.pris} kr <button onclick="fjernEkstraPost(${i})">✕</button></span>
-    `;
-    c.appendChild(r);
-  });
-}
-
-/* KM */
-async function beregnKm() {
-  if (!firmaadresse.value || !kundeadresse.value) {
-    alert("Fyll inn begge adresser");
-    return;
-  }
-  const res = await fetch("/api/route", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ start: firmaadresse.value, end: kundeadresse.value })
-  });
-  const data = await res.json();
-  let km = data.km;
-  if (turRetur.checked) km *= 2;
-  kmPerDag.value = km.toFixed(1);
-}
-
-/* BEREGNING */
-function beregn() {
-  const timer = (beskrivelse.value.match(/(\d+)\s*t/gi)||[])
-    .map(x=>+x.replace(/\D/g,"")).reduce((a,b)=>a+b,0);
-  const dager = Math.max(1, Math.ceil(timer/7.5));
-
-  const arbeid = timer*(+timepris.value||0);
-  const kjøring = dager*(+kmPerDag.value||0)*(+prisPerKm.value||0);
-  const bom = dager*(+bomPerDag.value||0);
-  const hmsTot = dager*(+hms.value||0);
-  const avf = +avfall.value||0;
-  const mat = +materiell.value||0;
-  const ekstraSum = ekstraPoster.reduce((s,p)=>s+p.pris,0);
-
-  const totalEks = arbeid+kjøring+bom+hmsTot+avf+mat+ekstraSum;
-  const totalInk = totalEks*1.25;
-
-  kalkyle = {
-    beskrivelse: beskrivelse.value,
-    timer, dager,
-    totalEksMva: totalEks,
-    totalInkMva: totalInk
-  };
-
-  resultat.textContent =
-`Arbeidsomfang:
-${timer} timer over ${dager} dag(er)
-
-Detaljert pris (eks. mva):
-– Arbeid: ${Math.round(arbeid)} kr
-– Kjøring: ${Math.round(kjøring)} kr
-– Bom: ${Math.round(bom)} kr
-– HMS: ${Math.round(hmsTot)} kr
-– Avfall totalt: ${avf} kr
-– Materiell/forbruk totalt: ${mat} kr
-${ekstraPoster.length ? "\nEkstra poster:" : ""}
-${ekstraPoster.map(p => – ${p.navn}: ${p.pris} kr).join("\n")}
-
---------------------
-Sum eks. mva: ${Math.round(totalEks)} kr
-Mva (25 %): ${Math.round(totalEks * 0.25)} kr
-Totalt inkl. mva: ${Math.round(totalInk)} kr`;
-
-  aiBtn.disabled = false;
-}
-
-/* AI */
-async function genererTilbud() {
-  tilbud.textContent = "Genererer tilbudstekst…";
-  const res = await fetch("/api/ai", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(kalkyle)
-  });
-  const data = await res.json();
-  tilbud.textContent = data.text || "Ingen tekst returnert";
-}
-
-function kopierTilbud() {
-  navigator.clipboard.writeText(tilbud.textContent);
-}
 </script>
 
 </body>
