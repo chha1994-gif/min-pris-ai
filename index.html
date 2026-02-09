@@ -196,12 +196,6 @@ async function startStripeCheckout(source) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ source })
   });
-
-  if (!res.ok) {
-    alert("Stripe-feil. Sjekk Stripe-oppsett.");
-    return;
-  }
-
   const data = await res.json();
   location.href = data.url;
 }
@@ -305,8 +299,17 @@ function beregn() {
   kalkyle = { beskrivelse:beskrivelse.value, timer, dager, totalEksMva:totalEks, totalInkMva:totalInk };
 
   resultat.textContent =
-`Sum eks. mva: ${totalEks} kr
-Totalt inkl. mva: ${totalInk} kr`;
+`Detaljert pris (eks. mva):
+– Arbeid: ${arbeid} kr
+– Kjøring: ${kjøring} kr
+– Bom: ${bom} kr
+– HMS: ${hmsTot} kr
+– Avfall: ${avf} kr
+– Materiell: ${mat} kr
+${ekstraPoster.map(p=>`– ${p.navn}: ${p.pris} kr`).join("\n")}
+
+Sum eks. mva: ${totalEks} kr
+Totalt inkl. mva (25%): ${totalInk} kr`;
 
   aiBtn.disabled = false;
 }
