@@ -198,7 +198,7 @@ async function startStripeCheckout(source) {
   });
 
   if (!res.ok) {
-    alert("Stripe-feil. Sjekk at STRIPE_SECRET_KEY og STRIPE_PRICE_ID er satt.");
+    alert("Stripe-feil. Sjekk Stripe-oppsett.");
     return;
   }
 
@@ -210,7 +210,7 @@ if (new URLSearchParams(location.search).get("pro")) {
   localStorage.setItem("minpris_pro", "1");
 }
 
-/* ===== AUTOLAGRING ===== */
+/* ===== AUTOLAGRING + SLETT ===== */
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
 
@@ -269,6 +269,9 @@ async function beregnKm() {
     merkGratisBrukt("km");
   }
 
+  if (!firmaadresse.value || !kundeadresse.value)
+    return alert("Fyll inn begge adresser");
+
   const res = await fetch("/api/route", {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
@@ -301,7 +304,10 @@ function beregn() {
 
   kalkyle = { beskrivelse:beskrivelse.value, timer, dager, totalEksMva:totalEks, totalInkMva:totalInk };
 
-  resultat.textContent = Sum eks. mva: ${totalEks} kr\nTotalt inkl. mva: ${totalInk} kr;
+  resultat.textContent =
+`Sum eks. mva: ${totalEks} kr
+Totalt inkl. mva: ${totalInk} kr`;
+
   aiBtn.disabled = false;
 }
 
