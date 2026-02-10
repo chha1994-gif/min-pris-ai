@@ -60,6 +60,7 @@
       margin-top: 10px;
       font-weight: 600;
     }
+    .checkbox-row input { width: auto; margin: 0; }
 
     .start-new-row {
       display: flex;
@@ -83,30 +84,42 @@
       align-items: center;
       margin-top: 8px;
     }
+    .ekstra-item input {
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+    .ekstra-item .pris { text-align: right; }
+    .ekstra-item button {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 50%;
+      font-size: 16px;
+      background: #e5e7eb;
+    }
 
-    /* ===== MELLOMSTASJON (MODAL) ===== */
+    /* ===== MELLOMSTASJON (KUN VISUELL) ===== */
     .modal {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.45);
+      background: rgba(0,0,0,.45);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 9999;
     }
-    .modal.hidden { display: none; }
-
+    .modal.hidden { display:none; }
     .modal-box {
-      background: white;
-      padding: 24px;
-      border-radius: 16px;
-      max-width: 420px;
-      width: 90%;
-      text-align: center;
+      background:#fff;
+      padding:24px;
+      border-radius:14px;
+      max-width:420px;
+      width:90%;
+      text-align:center;
     }
-    .modal-box p {
-      margin: 14px 0;
-    }
+    .modal-box p { margin:14px 0; }
   </style>
 </head>
 
@@ -162,6 +175,7 @@
 <input id="hms" type="number" value="0" />
 
 <div id="ekstraPoster"></div>
+
 <button type="button" class="blue" onclick="leggTilEkstraPost()">+ Legg til ekstra post</button>
 
 <button class="dark" onclick="beregn()">Beregn</button>
@@ -177,7 +191,7 @@
 
 </div>
 
-<!-- MELLOMSTASJON MODAL -->
+<!-- MELLOMSTASJON FØR STRIPE -->
 <div id="stripeModal" class="modal hidden">
   <div class="modal-box">
     <h3>MinPris Pro</h3>
@@ -189,6 +203,12 @@
     <button class="gray" onclick="lukkStripeModal()">Ikke nå</button>
   </div>
 </div>
+
+<!-- GOOGLE MAPS -->
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
+  async defer>
+</script>
 
 <script>
 let kalkyle = null;
@@ -216,6 +236,7 @@ async function startStripeCheckout(source) {
   location.href = data.url;
 }
 
+/* ===== MELLOMSTASJON ===== */
 function førStripe(source) {
   stripeSource = source;
   stripeModal.classList.remove("hidden");
@@ -227,6 +248,10 @@ function lukkStripeModal() {
 function fortsettStripe() {
   if (!stripeSource) return;
   startStripeCheckout(stripeSource);
+}
+
+if (new URLSearchParams(location.search).get("pro")) {
+  localStorage.setItem("minpris_pro", "1");
 }
 
 /* ===== AUTOLAGRING + SLETT ===== */
@@ -251,12 +276,45 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
+/* ===== GOOGLE AUTOCOMPLETE ===== */
+window.initAutocomplete = function () {
+  new google.maps.places.Autocomplete(firmaadresse, { componentRestrictions:{country:"no"} });
+  new google.maps.places.Autocomplete(kundeadresse, { componentRestrictions:{country:"no"} });
+};
+
+/* ===== EKSTRA POSTER ===== */
+function leggTilEkstraPost() {
+  ekstraPoster.push({ navn:"", pris:0 });
+  visEkstraPoster();
+}
+function fjernEkstraPost(i) {
+  ekstraPoster.splice(i,1);
+  visEkstraPoster();
+}
+function visEkstraPoster() {
+  const c = document.getElementById("ekstraPoster");
+  c.innerHTML = "";
+  ekstraPoster.forEach((p,i)=>{
+    c.innerHTML += `
+      <div class="ekstra-item">
+        <input placeholder="Navn på post" value="${p.navn}"
+          oninput="ekstraPoster[${i}].navn=this.value">
+        <input type="number" class="pris" placeholder="Kr" value="${p.pris||""}"
+          oninput="ekstraPoster[${i}].pris=Number(this.value)">
+        <button onclick="fjernEkstraPost(${i})">✕</button>
+      </div>`;
+  });
+}
+
 /* ===== KM ===== */
 async function beregnKm() {
   if (!harPro()) {
     if (gratisBrukt("km")) return førStripe("km");
     merkGratisBrukt("km");
   }
+
+  if (!firmaadresse.value || !kundeadresse.value)
+    return alert("Fyll inn begge adresser");
 
   const res = await fetch("/api/route", {
     method:"POST",
@@ -270,7 +328,7 @@ async function beregnKm() {
   kmPerDag.value = km.toFixed(1);
 }
 
-/* ===== BEREGNING + AI-FIX ===== */
+/* ===== BEREGNING ===== */
 function beregn() {
   const timer = (beskrivelse.value.match(/(\d+)\s*t/gi)||[])
     .map(x=>+x.replace(/\D/g,""))
