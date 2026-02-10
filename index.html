@@ -43,6 +43,7 @@
     .dark { background:#111827; color:white; }
     .blue { background:#2563eb; color:white; }
     .success { background:#16a34a; color:white; }
+    .gray { background:#e5e7eb; }
 
     pre {
       background:#f1f5f9;
@@ -59,7 +60,6 @@
       margin-top: 10px;
       font-weight: 600;
     }
-    .checkbox-row input { width: auto; margin: 0; }
 
     .start-new-row {
       display: flex;
@@ -83,20 +83,29 @@
       align-items: center;
       margin-top: 8px;
     }
-    .ekstra-item input {
-      padding: 10px;
-      font-size: 14px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
+
+    /* ===== MELLOMSTASJON (MODAL) ===== */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
     }
-    .ekstra-item .pris { text-align: right; }
-    .ekstra-item button {
-      width: 36px;
-      height: 36px;
-      padding: 0;
-      border-radius: 50%;
-      font-size: 16px;
-      background: #e5e7eb;
+    .modal.hidden { display: none; }
+
+    .modal-box {
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+    }
+    .modal-box p {
+      margin: 14px 0;
     }
   </style>
 </head>
@@ -108,7 +117,7 @@
 
 <label>Arbeidsbeskrivelse</label>
 <textarea id="beskrivelse" rows="4"
-  placeholder="Beskriv jobben, f.eks: bad - 25t riving, 8t sanering (tips: trykk «enter» for ny linje)"></textarea>
+  placeholder="Beskriv jobben, f.eks: bad - 25t riving, 8t sanering (tips: tast «enter» for ny linje)"></textarea>
 
 <div class="start-new-row">
   <button type="button" id="startNyBtn"
@@ -153,7 +162,6 @@
 <input id="hms" type="number" value="0" />
 
 <div id="ekstraPoster"></div>
-
 <button type="button" class="blue" onclick="leggTilEkstraPost()">+ Legg til ekstra post</button>
 
 <button class="dark" onclick="beregn()">Beregn</button>
@@ -169,15 +177,23 @@
 
 </div>
 
-<!-- GOOGLE MAPS -->
-<script
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
-  async defer>
-</script>
+<!-- MELLOMSTASJON MODAL -->
+<div id="stripeModal" class="modal hidden">
+  <div class="modal-box">
+    <h3>MinPris Pro</h3>
+    <p>
+      Du har brukt gratisgrensen.<br><br>
+      Pro (49 kr/mnd) gir ubegrenset km-beregning og AI-tilbud.
+    </p>
+    <button class="blue" onclick="fortsettStripe()">Fortsett til betaling</button>
+    <button class="gray" onclick="lukkStripeModal()">Ikke nå</button>
+  </div>
+</div>
 
 <script>
 let kalkyle = null;
 let ekstraPoster = [];
+let stripeSource = null;
 
 /* ===== PRO / STRIPE ===== */
 function harPro() {
@@ -200,14 +216,17 @@ async function startStripeCheckout(source) {
   location.href = data.url;
 }
 
-/* === MELLOMSTASJON FØR STRIPE (NY) === */
 function førStripe(source) {
-  if (!confirm("Du har brukt gratisgrensen.\n\nVil du fortsette til betaling?")) return;
-  startStripeCheckout(source);
+  stripeSource = source;
+  stripeModal.classList.remove("hidden");
 }
-
-if (new URLSearchParams(location.search).get("pro")) {
-  localStorage.setItem("minpris_pro", "1");
+function lukkStripeModal() {
+  stripeModal.classList.add("hidden");
+  stripeSource = null;
+}
+function fortsettStripe() {
+  if (!stripeSource) return;
+  startStripeCheckout(stripeSource);
 }
 
 /* ===== AUTOLAGRING + SLETT ===== */
@@ -232,45 +251,12 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
-/* ===== GOOGLE AUTOCOMPLETE ===== */
-window.initAutocomplete = function () {
-  new google.maps.places.Autocomplete(firmaadresse, { componentRestrictions:{country:"no"} });
-  new google.maps.places.Autocomplete(kundeadresse, { componentRestrictions:{country:"no"} });
-};
-
-/* ===== EKSTRA POSTER ===== */
-function leggTilEkstraPost() {
-  ekstraPoster.push({ navn:"", pris:0 });
-  visEkstraPoster();
-}
-function fjernEkstraPost(i) {
-  ekstraPoster.splice(i,1);
-  visEkstraPoster();
-}
-function visEkstraPoster() {
-  const c = document.getElementById("ekstraPoster");
-  c.innerHTML = "";
-  ekstraPoster.forEach((p,i)=>{
-    c.innerHTML += `
-      <div class="ekstra-item">
-        <input placeholder="Navn på post" value="${p.navn}"
-          oninput="ekstraPoster[${i}].navn=this.value">
-        <input type="number" class="pris" placeholder="Kr" value="${p.pris||""}"
-          oninput="ekstraPoster[${i}].pris=Number(this.value)">
-        <button onclick="fjernEkstraPost(${i})">✕</button>
-      </div>`;
-  });
-}
-
 /* ===== KM ===== */
 async function beregnKm() {
   if (!harPro()) {
     if (gratisBrukt("km")) return førStripe("km");
     merkGratisBrukt("km");
   }
-
-  if (!firmaadresse.value || !kundeadresse.value)
-    return alert("Fyll inn begge adresser");
 
   const res = await fetch("/api/route", {
     method:"POST",
@@ -284,7 +270,7 @@ async function beregnKm() {
   kmPerDag.value = km.toFixed(1);
 }
 
-/* ===== BEREGNING ===== */
+/* ===== BEREGNING + AI-FIX ===== */
 function beregn() {
   const timer = (beskrivelse.value.match(/(\d+)\s*t/gi)||[])
     .map(x=>+x.replace(/\D/g,""))
@@ -302,7 +288,6 @@ function beregn() {
   const totalEks = arbeid+kjøring+bom+hmsTot+avf+mat+ekstraSum;
   const totalInk = totalEks*1.25;
 
-  /* === AI-FIX (UTVIDET KALKYLE, INGEN ANDRE ENDRINGER) === */
   kalkyle = {
     beskrivelse: beskrivelse.value,
     timer,
