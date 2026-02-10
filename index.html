@@ -169,6 +169,28 @@
 
 </div>
 
+<!-- PRO MODAL (NY – B-FLYT) -->
+<div id="proModal" class="hidden"
+     style="position:fixed;inset:0;background:rgba(0,0,0,.5);
+            display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;padding:24px;border-radius:14px;
+              max-width:420px;width:90%;">
+    <h3>MinPris Pro</h3>
+    <p>
+      Du har brukt gratisgrensen.<br><br>
+      <strong>Pro (49 kr/mnd)</strong> gir:
+      <br>– Ubegrenset km-beregning
+      <br>– Ubegrenset AI-tilbud
+    </p>
+    <button class="blue" onclick="startStripeCheckout(activeFeature)">
+      Oppgrader til Pro
+    </button>
+    <button style="margin-top:8px" onclick="lukkProModal()">
+      Ikke nå
+    </button>
+  </div>
+</div>
+
 <!-- GOOGLE MAPS -->
 <script
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
@@ -178,6 +200,7 @@
 <script>
 let kalkyle = null;
 let ekstraPoster = [];
+let activeFeature = null;
 
 /* ===== PRO / STRIPE ===== */
 function harPro() {
@@ -188,6 +211,13 @@ function gratisBrukt(type) {
 }
 function merkGratisBrukt(type) {
   localStorage.setItem("minpris_free_" + type, "1");
+}
+function visProModal(type) {
+  activeFeature = type;
+  proModal.classList.remove("hidden");
+}
+function lukkProModal() {
+  proModal.classList.add("hidden");
 }
 
 async function startStripeCheckout(source) {
@@ -259,7 +289,7 @@ function visEkstraPoster() {
 /* ===== KM ===== */
 async function beregnKm() {
   if (!harPro()) {
-    if (gratisBrukt("km")) return startStripeCheckout("km");
+    if (gratisBrukt("km")) return visProModal("km");
     merkGratisBrukt("km");
   }
 
@@ -296,7 +326,22 @@ function beregn() {
   const totalEks = arbeid+kjøring+bom+hmsTot+avf+mat+ekstraSum;
   const totalInk = totalEks*1.25;
 
-  kalkyle = { beskrivelse:beskrivelse.value, timer, dager, totalEksMva:totalEks, totalInkMva:totalInk };
+  /* === OPPDATERT KALKYLE (AI-FIX) === */
+  kalkyle = {
+    beskrivelse: beskrivelse.value,
+    timer,
+    dager,
+    timepris: +timepris.value || 0,
+    arbeid,
+    kjøring,
+    bom,
+    avfall: avf,
+    materiell: mat,
+    hms: hmsTot,
+    kmPerDag: +kmPerDag.value || 0,
+    totalEksMva: totalEks,
+    totalInkMva: totalInk
+  };
 
   resultat.textContent =
 `Detaljert pris (eks. mva):
@@ -317,7 +362,7 @@ Totalt inkl. mva (25%): ${totalInk} kr`;
 /* ===== AI ===== */
 async function genererTilbud() {
   if (!harPro()) {
-    if (gratisBrukt("ai")) return startStripeCheckout("ai");
+    if (gratisBrukt("ai")) return visProModal("ai");
     merkGratisBrukt("ai");
   }
 
