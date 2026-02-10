@@ -60,7 +60,6 @@
       margin-top: 10px;
       font-weight: 600;
     }
-    .checkbox-row input { width: auto; margin: 0; }
 
     .start-new-row {
       display: flex;
@@ -100,7 +99,6 @@
       background: #e5e7eb;
     }
 
-    /* ===== MELLOMSTASJON (KUN VISUELL) ===== */
     .modal {
       position: fixed;
       inset: 0;
@@ -119,7 +117,6 @@
       width:90%;
       text-align:center;
     }
-    .modal-box p { margin:14px 0; }
   </style>
 </head>
 
@@ -175,7 +172,6 @@
 <input id="hms" type="number" value="0" />
 
 <div id="ekstraPoster"></div>
-
 <button type="button" class="blue" onclick="leggTilEkstraPost()">+ Legg til ekstra post</button>
 
 <button class="dark" onclick="beregn()">Beregn</button>
@@ -191,7 +187,6 @@
 
 </div>
 
-<!-- MELLOMSTASJON FØR STRIPE -->
 <div id="stripeModal" class="modal hidden">
   <div class="modal-box">
     <h3>MinPris Pro</h3>
@@ -204,7 +199,6 @@
   </div>
 </div>
 
-<!-- GOOGLE MAPS -->
 <script
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
   async defer>
@@ -215,7 +209,6 @@ let kalkyle = null;
 let ekstraPoster = [];
 let stripeSource = null;
 
-/* ===== PRO / STRIPE ===== */
 function harPro() {
   return localStorage.getItem("minpris_pro") === "1";
 }
@@ -236,7 +229,6 @@ async function startStripeCheckout(source) {
   location.href = data.url;
 }
 
-/* ===== MELLOMSTASJON ===== */
 function førStripe(source) {
   stripeSource = source;
   stripeModal.classList.remove("hidden");
@@ -254,7 +246,6 @@ if (new URLSearchParams(location.search).get("pro")) {
   localStorage.setItem("minpris_pro", "1");
 }
 
-/* ===== AUTOLAGRING + SLETT ===== */
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
 
@@ -276,13 +267,11 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
-/* ===== GOOGLE AUTOCOMPLETE ===== */
 window.initAutocomplete = function () {
   new google.maps.places.Autocomplete(firmaadresse, { componentRestrictions:{country:"no"} });
   new google.maps.places.Autocomplete(kundeadresse, { componentRestrictions:{country:"no"} });
 };
 
-/* ===== EKSTRA POSTER ===== */
 function leggTilEkstraPost() {
   ekstraPoster.push({ navn:"", pris:0 });
   visEkstraPoster();
@@ -306,7 +295,6 @@ function visEkstraPoster() {
   });
 }
 
-/* ===== KM ===== */
 async function beregnKm() {
   if (!harPro()) {
     if (gratisBrukt("km")) return førStripe("km");
@@ -328,7 +316,6 @@ async function beregnKm() {
   kmPerDag.value = km.toFixed(1);
 }
 
-/* ===== BEREGNING ===== */
 function beregn() {
   const timer = (beskrivelse.value.match(/(\d+)\s*t/gi)||[])
     .map(x=>+x.replace(/\D/g,""))
@@ -378,7 +365,6 @@ Totalt inkl. mva (25%): ${totalInk} kr`;
   aiBtn.disabled = false;
 }
 
-/* ===== AI ===== */
 async function genererTilbud() {
   if (!harPro()) {
     if (gratisBrukt("ai")) return førStripe("ai");
@@ -386,11 +372,17 @@ async function genererTilbud() {
   }
 
   tilbud.textContent = "Genererer tilbudstekst…";
+
   const res = await fetch("/api/ai", {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body:JSON.stringify(kalkyle)
   });
+
+  if (!res.ok) {
+    tilbud.textContent = "Kunne ikke generere tilbud (serverfeil).";
+    return;
+  }
 
   const data = await res.json();
   tilbud.textContent = data.text || "Ingen tekst returnert";
