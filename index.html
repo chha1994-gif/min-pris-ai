@@ -59,6 +59,7 @@
       margin-top: 10px;
       font-weight: 600;
     }
+    .checkbox-row input { width: auto; margin: 0; }
 
     .start-new-row {
       display: flex;
@@ -82,6 +83,21 @@
       align-items: center;
       margin-top: 8px;
     }
+    .ekstra-item input {
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+    .ekstra-item .pris { text-align: right; }
+    .ekstra-item button {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 50%;
+      font-size: 16px;
+      background: #e5e7eb;
+    }
   </style>
 </head>
 
@@ -92,7 +108,7 @@
 
 <label>Arbeidsbeskrivelse</label>
 <textarea id="beskrivelse" rows="4"
-placeholder="Beskriv jobben, f.eks: bad - 25t riving, 8t sanering"></textarea>
+  placeholder="Beskriv jobben, f.eks: bad - 25t riving, 8t sanering (tips: trykk «enter» for ny linje)"></textarea>
 
 <div class="start-new-row">
   <button type="button" id="startNyBtn"
@@ -106,10 +122,10 @@ placeholder="Beskriv jobben, f.eks: bad - 25t riving, 8t sanering"></textarea>
 <input id="timepris" type="number" />
 
 <label>Firmaadresse</label>
-<input id="firmaadresse" />
+<input id="firmaadresse" type="text" />
 
 <label>Kundeadresse</label>
-<input id="kundeadresse" />
+<input id="kundeadresse" type="text" />
 
 <div class="checkbox-row">
   <input type="checkbox" id="turRetur" checked />
@@ -122,27 +138,26 @@ placeholder="Beskriv jobben, f.eks: bad - 25t riving, 8t sanering"></textarea>
 <input id="kmPerDag" type="number" />
 
 <label>Pris per km (kr)</label>
-<input id="prisPerKm" value="15" type="number" />
+<input id="prisPerKm" type="number" value="15" />
 
 <label>Estimerte bompenger per dag (kr)</label>
 <input id="bomPerDag" type="number" />
 
 <label>Avfall totalt (kr)</label>
-<input id="avfall" value="0" type="number" />
+<input id="avfall" type="number" value="0" />
 
 <label>Materiell / forbruk totalt (kr)</label>
-<input id="materiell" value="0" type="number" />
+<input id="materiell" type="number" value="0" />
 
 <label>HMS-forbruk per dag (kr)</label>
-<input id="hms" value="0" type="number" />
+<input id="hms" type="number" value="0" />
 
 <div id="ekstraPoster"></div>
-<button class="blue" onclick="leggTilEkstraPost()">+ Legg til ekstra post</button>
+
+<button type="button" class="blue" onclick="leggTilEkstraPost()">+ Legg til ekstra post</button>
 
 <button class="dark" onclick="beregn()">Beregn</button>
-<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>
-  Generer tilbudstekst
-</button>
+<button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>Generer tilbudstekst</button>
 
 <h3>Resultat</h3>
 <pre id="resultat"></pre>
@@ -150,9 +165,15 @@ placeholder="Beskriv jobben, f.eks: bad - 25t riving, 8t sanering"></textarea>
 <h3>Tilbudstekst</h3>
 <pre id="tilbud"></pre>
 
-<button class="success" onclick="kopierTilbud()">Kopier tilbudstekst</button>
+<button type="button" class="success" onclick="kopierTilbud()">Kopier tilbudstekst</button>
 
 </div>
+
+<!-- GOOGLE MAPS -->
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4KVPzijWJug6VZBGsnBsDBXiuRvUR60o&libraries=places&language=no&callback=initAutocomplete"
+  async defer>
+</script>
 
 <script>
 let kalkyle = null;
@@ -179,13 +200,9 @@ async function startStripeCheckout(source) {
   location.href = data.url;
 }
 
-function proMellomstasjon(source) {
-  if (!confirm(
-    "Du har brukt gratisgrensen.\n\n" +
-    "MinPris Pro (49 kr/mnd) gir ubegrenset bruk.\n\n" +
-    "Vil du fortsette til betaling?"
-  )) return;
-
+/* === MELLOMSTASJON FØR STRIPE (NY) === */
+function førStripe(source) {
+  if (!confirm("Du har brukt gratisgrensen.\n\nVil du fortsette til betaling?")) return;
   startStripeCheckout(source);
 }
 
@@ -193,7 +210,7 @@ if (new URLSearchParams(location.search).get("pro")) {
   localStorage.setItem("minpris_pro", "1");
 }
 
-/* ===== AUTOLAGRING ===== */
+/* ===== AUTOLAGRING + SLETT ===== */
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
 
@@ -215,12 +232,45 @@ function startNyBeskrivelse() {
   toggleStartNy();
 }
 
+/* ===== GOOGLE AUTOCOMPLETE ===== */
+window.initAutocomplete = function () {
+  new google.maps.places.Autocomplete(firmaadresse, { componentRestrictions:{country:"no"} });
+  new google.maps.places.Autocomplete(kundeadresse, { componentRestrictions:{country:"no"} });
+};
+
+/* ===== EKSTRA POSTER ===== */
+function leggTilEkstraPost() {
+  ekstraPoster.push({ navn:"", pris:0 });
+  visEkstraPoster();
+}
+function fjernEkstraPost(i) {
+  ekstraPoster.splice(i,1);
+  visEkstraPoster();
+}
+function visEkstraPoster() {
+  const c = document.getElementById("ekstraPoster");
+  c.innerHTML = "";
+  ekstraPoster.forEach((p,i)=>{
+    c.innerHTML += `
+      <div class="ekstra-item">
+        <input placeholder="Navn på post" value="${p.navn}"
+          oninput="ekstraPoster[${i}].navn=this.value">
+        <input type="number" class="pris" placeholder="Kr" value="${p.pris||""}"
+          oninput="ekstraPoster[${i}].pris=Number(this.value)">
+        <button onclick="fjernEkstraPost(${i})">✕</button>
+      </div>`;
+  });
+}
+
 /* ===== KM ===== */
 async function beregnKm() {
   if (!harPro()) {
-    if (gratisBrukt("km")) return proMellomstasjon("km");
+    if (gratisBrukt("km")) return førStripe("km");
     merkGratisBrukt("km");
   }
+
+  if (!firmaadresse.value || !kundeadresse.value)
+    return alert("Fyll inn begge adresser");
 
   const res = await fetch("/api/route", {
     method:"POST",
@@ -247,11 +297,12 @@ function beregn() {
   const hmsTot = dager*(+hms.value||0);
   const avf = +avfall.value||0;
   const mat = +materiell.value||0;
+  const ekstraSum = ekstraPoster.reduce((s,p)=>s+(+p.pris||0),0);
 
-  const totalEks = arbeid+kjøring+bom+hmsTot+avf+mat;
+  const totalEks = arbeid+kjøring+bom+hmsTot+avf+mat+ekstraSum;
   const totalInk = totalEks*1.25;
 
-  /* === AI-FIX: komplett kalkyle === */
+  /* === AI-FIX (UTVIDET KALKYLE, INGEN ANDRE ENDRINGER) === */
   kalkyle = {
     beskrivelse: beskrivelse.value,
     timer,
@@ -269,8 +320,17 @@ function beregn() {
   };
 
   resultat.textContent =
-`Sum eks. mva: ${totalEks} kr
-Totalt inkl. mva: ${totalInk} kr`;
+`Detaljert pris (eks. mva):
+– Arbeid: ${arbeid} kr
+– Kjøring: ${kjøring} kr
+– Bom: ${bom} kr
+– HMS: ${hmsTot} kr
+– Avfall: ${avf} kr
+– Materiell: ${mat} kr
+${ekstraPoster.map(p=>`– ${p.navn}: ${p.pris} kr`).join("\n")}
+
+Sum eks. mva: ${totalEks} kr
+Totalt inkl. mva (25%): ${totalInk} kr`;
 
   aiBtn.disabled = false;
 }
@@ -278,7 +338,7 @@ Totalt inkl. mva: ${totalInk} kr`;
 /* ===== AI ===== */
 async function genererTilbud() {
   if (!harPro()) {
-    if (gratisBrukt("ai")) return proMellomstasjon("ai");
+    if (gratisBrukt("ai")) return førStripe("ai");
     merkGratisBrukt("ai");
   }
 
