@@ -130,6 +130,20 @@
 
 <h1 class="title">MinPris – tilbudskalkulator</h1>
 
+<!-- ✅ NY -->
+<div id="proBadge" class="hidden" style="
+  margin-bottom: 10px;
+  text-align: center;
+  font-weight: 600;
+  background: #16a34a;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+">
+  Pro aktiv
+</div>
+
 <label>Arbeidsbeskrivelse</label>
 <textarea id="beskrivelse" rows="4"
   placeholder="Beskriv jobben, f.eks: bad - 25t riving, 8t sanering (tips: tast «enter» for ny linje)"></textarea>
@@ -182,8 +196,8 @@
 <button class="dark" onclick="beregn()">Beregn</button>
 <button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>Generer tilbudstekst</button>
 
-<!-- ✅ NY -->
-<button type="button" class="gray" onclick="kansellerAbonnement()">
+<!-- ✅ KUN ID LAGT TIL -->
+<button type="button" id="cancelBtn" class="gray" onclick="kansellerAbonnement()">
   Avslutt abonnement
 </button>
 
@@ -229,6 +243,17 @@ function merkGratisBrukt(type) {
   localStorage.setItem("minpris_free_" + type, "1");
 }
 
+/* ✅ NY */
+function oppdaterProUI() {
+  const pro = harPro();
+
+  const badge = document.getElementById("proBadge");
+  const cancelBtn = document.getElementById("cancelBtn");
+
+  if (badge) badge.classList.toggle("hidden", !pro);
+  if (cancelBtn) cancelBtn.style.display = pro ? "block" : "none";
+}
+
 async function startStripeCheckout(source) {
   const res = await fetch("/api/stripe/checkout", {
     method: "POST",
@@ -258,7 +283,7 @@ if (params.get("pro")) {
   localStorage.setItem("minpris_pro", "1");
 }
 
-/* ✅ NY Stripe success handler */
+/* ✅ Stripe success */
 if (params.get("success") && params.get("session_id")) {
   fetch("/api/stripe/session?session_id=" + params.get("session_id"))
     .then(res => res.json())
@@ -266,12 +291,16 @@ if (params.get("success") && params.get("session_id")) {
       if (data.customerId) {
         localStorage.setItem("stripeCustomerId", data.customerId);
         localStorage.setItem("minpris_pro", "1");
+        oppdaterProUI(); /* ✅ NY */
       }
     })
     .catch(() => {
       console.warn("Kunne ikke hente Stripe session");
     });
 }
+
+/* ✅ NY */
+window.addEventListener("load", oppdaterProUI);
 
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
@@ -431,7 +460,6 @@ function kopierTilbud() {
   navigator.clipboard.writeText(tilbud.textContent);
 }
 
-/* ✅ NY */
 async function kansellerAbonnement() {
   const customerId = localStorage.getItem("stripeCustomerId");
 
