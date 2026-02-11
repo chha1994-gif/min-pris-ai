@@ -25,11 +25,14 @@ module.exports = async function handler(req, res) {
           quantity: 1
         }
       ],
-      success_url: "https://min-pris-ai.vercel.app/?success=true",
-      cancel_url: "https://min-pris-ai.vercel.app/?canceled=true"
+      success_url:
+        "https://min-pris-ai.vercel.app/?success=true&session_id={CHECKOUT_SESSION_ID}",
+      cancel_url:
+        "https://min-pris-ai.vercel.app/?canceled=true"
     });
 
     return res.status(200).json({ url: session.url });
+
   } catch (err) {
     console.error("Stripe checkout error:", err);
     return res.status(500).json({
