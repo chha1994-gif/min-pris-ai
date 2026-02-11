@@ -130,7 +130,6 @@
 
 <h1 class="title">MinPris – tilbudskalkulator</h1>
 
-<!-- ✅ NY -->
 <div id="proBadge" class="hidden" style="
   margin-bottom: 10px;
   text-align: center;
@@ -196,9 +195,13 @@
 <button class="dark" onclick="beregn()">Beregn</button>
 <button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>Generer tilbudstekst</button>
 
-<!-- ✅ ENESTE ENDRING -->
 <button type="button" id="cancelBtn" class="gray" onclick="åpnePortal()">
   Administrer abonnement
+</button>
+
+<!-- ✅ NY -->
+<button type="button" id="reactivateBtn" class="blue hidden" onclick="gjenopptaAbonnement()">
+  Gjenoppta abonnement
 </button>
 
 <h3>Resultat</h3>
@@ -243,15 +246,31 @@ function merkGratisBrukt(type) {
   localStorage.setItem("minpris_free_" + type, "1");
 }
 
-/* ✅ NY */
+/* ✅ OPPDATERT */
 function oppdaterProUI() {
   const pro = harPro();
+  const cancelled = localStorage.getItem("minpris_cancelled") === "1";
+  const periodEnd = localStorage.getItem("minpris_period_end");
 
   const badge = document.getElementById("proBadge");
   const cancelBtn = document.getElementById("cancelBtn");
+  const reactivateBtn = document.getElementById("reactivateBtn");
 
   if (badge) badge.classList.toggle("hidden", !pro);
   if (cancelBtn) cancelBtn.style.display = pro ? "block" : "none";
+
+  if (badge && pro) {
+    if (cancelled && periodEnd) {
+      const dato = new Date(periodEnd * 1000).toLocaleDateString("no-NO");
+      badge.textContent = "Avsluttes " + dato;
+    } else {
+      badge.textContent = "Pro aktiv";
+    }
+  }
+
+  if (reactivateBtn) {
+    reactivateBtn.classList.toggle("hidden", !(pro && cancelled));
+  }
 }
 
 async function startStripeCheckout(source) {
@@ -290,12 +309,12 @@ if (params.get("success") && params.get("session_id")) {
     .then(data => {
       if (data.customerId) {
         localStorage.setItem("stripeCustomerId", data.customerId);
+        localStorage.setItem("stripeSubscriptionId", data.subscriptionId);
         localStorage.setItem("minpris_pro", "1");
+        localStorage.setItem("minpris_cancelled", "0");
+        localStorage.removeItem("minpris_period_end");
         oppdaterProUI();
       }
-    })
-    .catch(() => {
-      console.warn("Kunne ikke hente Stripe session");
     });
 }
 
@@ -441,17 +460,11 @@ async function genererTilbud() {
 
     clearTimeout(timeout);
 
-    if (!res.ok) {
-      tilbud.textContent = "Kunne ikke generere tilbud (AI-feil).";
-      return;
-    }
-
     const data = await res.json();
     tilbud.textContent = data.text || "Ingen tekst returnert.";
 
   } catch (err) {
     tilbud.textContent = "AI svarte ikke. Prøv igjen om litt.";
-    console.error("AI error:", err);
   }
 }
 
@@ -459,7 +472,6 @@ function kopierTilbud() {
   navigator.clipboard.writeText(tilbud.textContent);
 }
 
-/* ✅ NY FUNKSJON */
 async function åpnePortal() {
   const customerId = localStorage.getItem("stripeCustomerId");
 
@@ -467,24 +479,46 @@ async function åpnePortal() {
     return alert("Fant ikke abonnement.");
   }
 
+  const res = await fetch("/api/stripe/portal", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ customerId })
+  });
+
+  const data = await res.json();
+  if (data.url) location.href = data.url;
+}
+
+/* ✅ NY */
+async function gjenopptaAbonnement() {
+  const subscriptionId = localStorage.getItem("stripeSubscriptionId");
+
+  if (!subscriptionId) {
+    return alert("Fant ikke abonnement.");
+  }
+
+  if (!confirm("Gjenoppta abonnementet?")) return;
+
   try {
-    const res = await fetch("/api/stripe/portal", {
+    const res = await fetch("/api/stripe/reactivate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customerId })
+      body: JSON.stringify({ subscriptionId })
     });
 
     const data = await res.json();
 
-    if (data.url) {
-      location.href = data.url;
+    if (data.success) {
+      localStorage.setItem("minpris_cancelled", "0");
+      localStorage.removeItem("minpris_period_end");
+      oppdaterProUI();
+      alert("Abonnement gjenopptatt 👍");
     } else {
-      alert("Kunne ikke åpne kundeportal.");
+      alert("Kunne ikke gjenoppta abonnement");
     }
 
   } catch (err) {
-    console.error("Portal error:", err);
-    alert("Teknisk feil.");
+    alert("Teknisk feil");
   }
 }
 </script>
