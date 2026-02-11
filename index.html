@@ -61,7 +61,6 @@
       font-weight: 600;
     }
 
-    /* ENESTE ENDRING */
     .checkbox-row input {
       width: auto;
       margin: 0;
@@ -183,6 +182,11 @@
 <button class="dark" onclick="beregn()">Beregn</button>
 <button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>Generer tilbudstekst</button>
 
+<!-- ✅ NY -->
+<button type="button" class="gray" onclick="kansellerAbonnement()">
+  Avslutt abonnement
+</button>
+
 <h3>Resultat</h3>
 <pre id="resultat"></pre>
 
@@ -248,8 +252,25 @@ function fortsettStripe() {
   startStripeCheckout(stripeSource);
 }
 
-if (new URLSearchParams(location.search).get("pro")) {
+const params = new URLSearchParams(location.search);
+
+if (params.get("pro")) {
   localStorage.setItem("minpris_pro", "1");
+}
+
+/* ✅ NY Stripe success handler */
+if (params.get("success") && params.get("session_id")) {
+  fetch("/api/stripe/session?session_id=" + params.get("session_id"))
+    .then(res => res.json())
+    .then(data => {
+      if (data.customerId) {
+        localStorage.setItem("stripeCustomerId", data.customerId);
+        localStorage.setItem("minpris_pro", "1");
+      }
+    })
+    .catch(() => {
+      console.warn("Kunne ikke hente Stripe session");
+    });
 }
 
 const beskrivelseEl = document.getElementById("beskrivelse");
@@ -408,6 +429,41 @@ async function genererTilbud() {
 
 function kopierTilbud() {
   navigator.clipboard.writeText(tilbud.textContent);
+}
+
+/* ✅ NY */
+async function kansellerAbonnement() {
+  const customerId = localStorage.getItem("stripeCustomerId");
+
+  if (!customerId) {
+    return alert("Fant ikke aktivt abonnement.");
+  }
+
+  const ok = confirm(
+    "Er du sikker på at du vil avslutte abonnementet?\n\nDu beholder Pro ut perioden."
+  );
+
+  if (!ok) return;
+
+  try {
+    const res = await fetch("/api/stripe/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Abonnementet avsluttes ved periodeslutt 👍");
+    } else {
+      alert("Kunne ikke kansellere abonnement");
+    }
+
+  } catch (err) {
+    console.error("Cancel error:", err);
+    alert("Teknisk feil ved kansellering");
+  }
 }
 </script>
 
