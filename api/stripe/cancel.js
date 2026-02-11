@@ -1,43 +1,35 @@
-const Stripe = require("stripe");
+import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const { customerId } = req.body;
+    const { subscriptionId } = req.body;
 
-    if (!customerId) {
-      return res.status(400).json({ error: "Missing customerId" });
+    if (!subscriptionId) {
+      return res.status(400).json({ error: "Missing subscriptionId" });
     }
 
-    // Finn aktivt abonnement
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1
+    // Kanseller ved periode-slutt (vanlig SaaS oppførsel)
+    const sub = await stripe.subscriptions.update(subscriptionId, {
+      cancel_at_period_end: true,
     });
 
-    if (!subscriptions.data.length) {
-      return res.status(404).json({ error: "No active subscription" });
-    }
-
-    const subscription = subscriptions.data[0];
-
-    // Kanseller ved periodeslutt
-    await stripe.subscriptions.update(subscription.id, {
-      cancel_at_period_end: true
+    res.status(200).json({
+      success: true,
+      cancelled: sub.cancel_at_period_end,
+      current_period_end: sub.current_period_end,
     });
-
-    return res.status(200).json({ success: true });
 
   } catch (err) {
-    console.error("Cancel subscription error:", err);
-    return res.status(500).json({
-      error: err.message || "Cancel failed"
+    console.error("Stripe cancel error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Cancel failed",
     });
   }
-};
+}
