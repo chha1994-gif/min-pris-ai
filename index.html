@@ -200,6 +200,9 @@
 <button type="button" id="cancelBtn" class="gray" onclick="åpnePortal()">
   Administrer abonnement
 </button>
+  <button type="button" id="reactivateBtn" class="blue hidden" onclick="gjenopptaAbonnement()">
+  Gjenoppta abonnement
+</button>
 
 <h3>Resultat</h3>
 <pre id="resultat"></pre>
@@ -249,9 +252,27 @@ function oppdaterProUI() {
 
   const badge = document.getElementById("proBadge");
   const cancelBtn = document.getElementById("cancelBtn");
+  const reactivateBtn = document.getElementById("reactivateBtn");
+  const cancelled = localStorage.getItem("minpris_cancelled") === "1";
+  const periodEnd = localStorage.getItem("minpris_period_end");
 
   if (badge) badge.classList.toggle("hidden", !pro);
+  if (!pro && badge) {
+  badge.textContent = "Pro aktiv";
+}
   if (cancelBtn) cancelBtn.style.display = pro ? "block" : "none";
+
+  if (badge && pro) {
+  if (cancelled && periodEnd) {
+    const dato = new Date(periodEnd * 1000).toLocaleDateString("no-NO");
+    badge.textContent = "Avsluttes " + dato;
+  } else {
+    badge.textContent = "Pro aktiv";
+  }
+}
+
+if (reactivateBtn) {
+  reactivateBtn.style.display = (pro && cancelled) ? "block" : "none";
 }
 
 async function startStripeCheckout(source) {
@@ -288,11 +309,14 @@ if (params.get("success") && params.get("session_id")) {
   fetch("/api/stripe/session?session_id=" + params.get("session_id"))
     .then(res => res.json())
     .then(data => {
-      if (data.customerId) {
-        localStorage.setItem("stripeCustomerId", data.customerId);
-        localStorage.setItem("minpris_pro", "1");
-        oppdaterProUI();
-      }
+     if (data.customerId) {
+  localStorage.setItem("stripeCustomerId", data.customerId);
+  localStorage.setItem("stripeSubscriptionId", data.subscriptionId);
+  localStorage.setItem("minpris_cancelled", data.cancelAtPeriodEnd ? "1" : "0");
+  localStorage.setItem("minpris_period_end", data.periodEnd);
+  localStorage.setItem("minpris_pro", "1");
+  oppdaterProUI();
+}
     })
     .catch(() => {
       console.warn("Kunne ikke hente Stripe session");
@@ -461,6 +485,69 @@ function kopierTilbud() {
 
 /* ✅ NY FUNKSJON */
 async function åpnePortal() {
+  const customerId = localStorage.getItem("stripeCustomerId");
+
+  if (!customerId) {
+    return alert("Fant ikke abonnement.");
+  }
+
+  try {
+    const res = await fetch("/api/stripe/portal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId })
+    });
+
+    const data = await res.json();
+
+    if (data.url) {
+      location.href = data.url;
+    } else {
+      alert("Kunne ikke åpne kundeportal.");
+    }
+
+  } catch (err) {
+    console.error("Portal error:", err);
+    alert("Teknisk feil.");
+  }
+}
+
+/* ✅ NY FUNKSJON – SEPARAT */
+async function gjenopptaAbonnement() {
+  const subscriptionId = localStorage.getItem("stripeSubscriptionId");
+
+  if (!subscriptionId) {
+    return alert("Fant ikke abonnement.");
+  }
+
+  const ok = confirm("Gjenoppta abonnementet?");
+  if (!ok) return;
+
+  try {
+    const res = await fetch("/api/stripe/reactivate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscriptionId })
+    });
+
+    const data = await res.json();
+
+if (data.success) {
+  alert("Abonnement gjenopptatt 👍");
+
+  localStorage.setItem("minpris_cancelled", "0");
+  localStorage.removeItem("minpris_period_end");
+
+  oppdaterProUI();
+} else {
+  alert("Kunne ikke gjenoppta abonnement");
+}
+
+  } catch (err) {
+    console.error("Reactivate error:", err);
+    alert("Teknisk feil");
+  }
+}
   const customerId = localStorage.getItem("stripeCustomerId");
 
   if (!customerId) {
