@@ -196,9 +196,9 @@
 <button class="dark" onclick="beregn()">Beregn</button>
 <button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>Generer tilbudstekst</button>
 
-<!-- ✅ KUN ID LAGT TIL -->
-<button type="button" id="cancelBtn" class="gray" onclick="kansellerAbonnement()">
-  Avslutt abonnement
+<!-- ✅ ENESTE ENDRING -->
+<button type="button" id="cancelBtn" class="gray" onclick="åpnePortal()">
+  Administrer abonnement
 </button>
 
 <h3>Resultat</h3>
@@ -291,7 +291,7 @@ if (params.get("success") && params.get("session_id")) {
       if (data.customerId) {
         localStorage.setItem("stripeCustomerId", data.customerId);
         localStorage.setItem("minpris_pro", "1");
-        oppdaterProUI(); /* ✅ NY */
+        oppdaterProUI();
       }
     })
     .catch(() => {
@@ -299,7 +299,6 @@ if (params.get("success") && params.get("session_id")) {
     });
 }
 
-/* ✅ NY */
 window.addEventListener("load", oppdaterProUI);
 
 const beskrivelseEl = document.getElementById("beskrivelse");
@@ -460,21 +459,16 @@ function kopierTilbud() {
   navigator.clipboard.writeText(tilbud.textContent);
 }
 
-async function kansellerAbonnement() {
+/* ✅ NY FUNKSJON */
+async function åpnePortal() {
   const customerId = localStorage.getItem("stripeCustomerId");
 
   if (!customerId) {
-    return alert("Fant ikke aktivt abonnement.");
+    return alert("Fant ikke abonnement.");
   }
 
-  const ok = confirm(
-    "Er du sikker på at du vil avslutte abonnementet?\n\nDu beholder Pro ut perioden."
-  );
-
-  if (!ok) return;
-
   try {
-    const res = await fetch("/api/stripe/cancel", {
+    const res = await fetch("/api/stripe/portal", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ customerId })
@@ -482,15 +476,15 @@ async function kansellerAbonnement() {
 
     const data = await res.json();
 
-    if (data.success) {
-      alert("Abonnementet avsluttes ved periodeslutt 👍");
+    if (data.url) {
+      location.href = data.url;
     } else {
-      alert("Kunne ikke kansellere abonnement");
+      alert("Kunne ikke åpne kundeportal.");
     }
 
   } catch (err) {
-    console.error("Cancel error:", err);
-    alert("Teknisk feil ved kansellering");
+    console.error("Portal error:", err);
+    alert("Teknisk feil.");
   }
 }
 </script>
