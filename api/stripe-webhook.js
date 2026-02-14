@@ -4,13 +4,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
 
-module.exports.config = {
+const config = {
   api: {
     bodyParser: false,
   },
 };
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   console.log("🔥 Stripe webhook called");
 
   if (req.method !== "POST") {
@@ -24,9 +24,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const chunks = [];
-    for await (const chunk of req) {
-      chunks.push(chunk);
-    }
+    for await (const chunk of req) chunks.push(chunk);
     const rawBody = Buffer.concat(chunks);
 
     event = stripe.webhooks.constructEvent(rawBody, sig, secret);
@@ -39,4 +37,7 @@ module.exports = async function handler(req, res) {
   console.log("✅ Event:", event.type);
 
   res.status(200).json({ received: true });
-};
+}
+
+module.exports = handler;
+module.exports.config = config;
