@@ -4,7 +4,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
 
-export const config = {
+module.exports.config = {
   api: {
     bodyParser: false,
   },
@@ -24,40 +24,19 @@ module.exports = async function handler(req, res) {
 
   try {
     const chunks = [];
-
     for await (const chunk of req) {
       chunks.push(chunk);
     }
-
     const rawBody = Buffer.concat(chunks);
 
     event = stripe.webhooks.constructEvent(rawBody, sig, secret);
 
   } catch (err) {
-    console.error("❌ Webhook signature error:", err.message);
+    console.error("❌ Signature error:", err.message);
     return res.status(400).send(Webhook Error: ${err.message});
   }
 
-  try {
-    switch (event.type) {
+  console.log("✅ Event:", event.type);
 
-      case "checkout.session.completed":
-        console.log("✅ Checkout completed");
-        break;
-
-      case "customer.subscription.updated":
-        console.log("✅ Subscription updated");
-        break;
-
-      case "invoice.paid":
-        console.log("✅ Invoice paid");
-        break;
-    }
-
-    res.status(200).json({ received: true });
-
-  } catch (err) {
-    console.error("❌ Handler crash:", err);
-    res.status(500).json({ error: "Webhook handler failed" });
-  }
+  res.status(200).json({ received: true });
 };
