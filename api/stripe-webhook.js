@@ -1,5 +1,4 @@
 const Stripe = require("stripe");
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 module.exports = async (req, res) => {
@@ -8,16 +7,13 @@ module.exports = async (req, res) => {
   }
 
   const sig = req.headers["stripe-signature"];
-
   let event;
 
   try {
     const chunks = [];
-
     for await (const chunk of req) {
       chunks.push(chunk);
     }
-
     const rawBody = Buffer.concat(chunks);
 
     event = stripe.webhooks.constructEvent(
@@ -32,7 +28,6 @@ module.exports = async (req, res) => {
   }
 
   switch (event.type) {
-
     case "checkout.session.completed":
       console.log("✅ Payment success");
       break;
