@@ -1,9 +1,10 @@
-{
+
   "name": "min-pris-ai",
   "private": true,
   "type": "commonjs",
   "dependencies": {
     "stripe": "^14.0.0",
-    "openai": "^4.0.0"
+    "openai": "^4.0.0",
+    "micro": "^10.0.0"
   }
 }
