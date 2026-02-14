@@ -1,5 +1,3 @@
-00:49
-Du har sendt
 import Stripe from "stripe";
 
 export const config = {
