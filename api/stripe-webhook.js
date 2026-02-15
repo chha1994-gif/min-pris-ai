@@ -2,12 +2,6 @@ const Stripe = require("stripe");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).end("Method Not Allowed");
@@ -35,8 +29,6 @@ module.exports = async function handler(req, res) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
     console.log("💰 Payment success:", session.id);
-
-    // Her kommer PRO-aktivering senere hvis du vil
   }
 
   res.status(200).json({ received: true });
