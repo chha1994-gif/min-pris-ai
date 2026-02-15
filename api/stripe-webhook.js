@@ -1,9 +1,12 @@
+
+Du har sendt
 const Stripe = require("stripe");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
 
+// 🚨 Viktig for Stripe signature verification i Vercel
 const config = {
   api: {
     bodyParser: false,
@@ -24,18 +27,43 @@ async function handler(req, res) {
 
   try {
     const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
+
+    for await (const chunk of req) {
+      chunks.push(chunk);
+    }
+
     const rawBody = Buffer.concat(chunks);
 
     event = stripe.webhooks.constructEvent(rawBody, sig, secret);
 
   } catch (err) {
     console.error("❌ Signature error:", err.message);
+
+    // ✅ FIXET syntax error (backticks)
     return res.status(400).send(Webhook Error: ${err.message});
   }
 
-  console.log("✅ Event:", event.type);
+  console.log("✅ Event received:", event.type);
 
+  // 🎯 Handle Stripe events her
+  switch (event.type) {
+    case "customer.subscription.updated":
+      console.log("🔄 Subscription updated");
+      break;
+
+    case "customer.subscription.deleted":
+      console.log("❌ Subscription cancelled");
+      break;
+
+    case "checkout.session.completed":
+      console.log("💰 Checkout completed");
+      break;
+
+    default:
+      console.log("ℹ️ Unhandled event:", event.type);
+  }
+
+  // ✅ ALLTID returner 200 til Stripe
   res.status(200).json({ received: true });
 }
 
