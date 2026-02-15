@@ -4,8 +4,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
 
-// 🔥 KRITISK for Stripe signature verification
-export const config = {
+// ✅ CommonJS config (IKKE export!)
+module.exports.config = {
   api: {
     bodyParser: false,
   },
@@ -42,13 +42,12 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     console.error("❌ Signature verification failed:", err.message);
 
-    // ✅ KORREKT TEMPLATE STRING (BACKTICKS)
+    // ✅ BACKTICKS (kritisk)
     return res.status(400).send(Webhook Error: ${err.message});
   }
 
   console.log("✅ Event received:", event.type);
 
-  // 🎯 Handle Stripe events
   switch (event.type) {
     case "customer.subscription.updated":
       console.log("🔄 Subscription updated");
@@ -66,6 +65,6 @@ module.exports = async function handler(req, res) {
       console.log("ℹ️ Unhandled event:", event.type);
   }
 
-  // ✅ ALWAYS respond 200 to Stripe
+  // ✅ Stripe MUST receive 200
   res.status(200).json({ received: true });
 };
