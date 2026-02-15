@@ -1,7 +1,7 @@
 {
-  "name": "Min Pris",
-  "short_name": "Min Pris",
-  "start_url": "/min-pris-ai/",
+  "name": "MinPris",
+  "short_name": "MinPris",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0d47a1",
