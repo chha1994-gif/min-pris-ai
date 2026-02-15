@@ -4,8 +4,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
 
-// 🚨 KRITISK for Stripe signature verification i Vercel
-const config = {
+// 🔥 KRITISK for Stripe signature verification
+export const config = {
   api: {
     bodyParser: false,
   },
@@ -21,6 +21,11 @@ module.exports = async function handler(req, res) {
   const sig = req.headers["stripe-signature"];
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
+  if (!sig) {
+    console.error("❌ Missing stripe-signature header");
+    return res.status(400).send("Missing stripe-signature header");
+  }
+
   let event;
 
   try {
@@ -35,14 +40,15 @@ module.exports = async function handler(req, res) {
     event = stripe.webhooks.constructEvent(rawBody, sig, secret);
 
   } catch (err) {
-    console.error("❌ Signature error:", err.message);
+    console.error("❌ Signature verification failed:", err.message);
 
-    // ✅ KORREKT TEMPLATE STRING (backticks!)
+    // ✅ KORREKT TEMPLATE STRING (BACKTICKS)
     return res.status(400).send(Webhook Error: ${err.message});
   }
 
   console.log("✅ Event received:", event.type);
 
+  // 🎯 Handle Stripe events
   switch (event.type) {
     case "customer.subscription.updated":
       console.log("🔄 Subscription updated");
@@ -53,15 +59,13 @@ module.exports = async function handler(req, res) {
       break;
 
     case "checkout.session.completed":
-      console.log("💰 Checkout completed");
+      console.log("💳 Checkout completed");
       break;
 
     default:
       console.log("ℹ️ Unhandled event:", event.type);
   }
 
-  // ✅ ALLTID returner 200 til Stripe
+  // ✅ ALWAYS respond 200 to Stripe
   res.status(200).json({ received: true });
 };
-
-module.exports.config = config;
