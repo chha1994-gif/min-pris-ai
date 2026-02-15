@@ -1,4 +1,4 @@
-import Stripe from "stripe";
+const Stripe = require("stripe");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -8,7 +8,7 @@ export const config = {
   },
 };
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).end("Method Not Allowed");
   }
@@ -26,19 +26,21 @@ export default async function handler(req, res) {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("❌ Webhook signature failed:", err.message);
+    console.error("❌ Signature verification failed:", err.message);
     return res.status(400).send(Webhook Error: ${err.message});
   }
 
-  console.log("✅ Event received:", event.type);
+  console.log("✅ Event:", event.type);
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
     console.log("💰 Payment success:", session.id);
+
+    // Her kommer PRO-aktivering senere hvis du vil
   }
 
   res.status(200).json({ received: true });
-}
+};
 
 function buffer(readable) {
   return new Promise((resolve, reject) => {
