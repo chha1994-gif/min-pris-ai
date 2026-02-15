@@ -4,14 +4,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
 
-// 🚨 Viktig for Stripe signature verification i Vercel
+// 🚨 KRITISK for Stripe signature verification i Vercel
 const config = {
   api: {
     bodyParser: false,
   },
 };
 
-async function handler(req, res) {
+module.exports = async function handler(req, res) {
   console.log("🔥 Stripe webhook called");
 
   if (req.method !== "POST") {
@@ -37,13 +37,12 @@ async function handler(req, res) {
   } catch (err) {
     console.error("❌ Signature error:", err.message);
 
-    // ✅ FIXET syntax error (backticks)
+    // ✅ KORREKT TEMPLATE STRING (backticks!)
     return res.status(400).send(Webhook Error: ${err.message});
   }
 
   console.log("✅ Event received:", event.type);
 
-  // 🎯 Handle Stripe events her
   switch (event.type) {
     case "customer.subscription.updated":
       console.log("🔄 Subscription updated");
@@ -63,7 +62,6 @@ async function handler(req, res) {
 
   // ✅ ALLTID returner 200 til Stripe
   res.status(200).json({ received: true });
-}
+};
 
-module.exports = handler;
 module.exports.config = config;
