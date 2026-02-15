@@ -39,22 +39,63 @@ module.exports = async function handler(req, res) {
 
   console.log("✅ Event received:", event.type);
 
+  // 🎯 HANDLE EVENTS SAFELY
   switch (event.type) {
-    case "customer.subscription.updated":
-      console.log("🔄 Subscription updated");
-      break;
 
-    case "customer.subscription.deleted":
-      console.log("❌ Subscription cancelled");
+    case "customer.subscription.updated": {
+      const subscription = event.data.object;
+
+      console.log("🔄 Subscription updated");
+      console.log("📊 Status:", subscription.status);
+
+      if (subscription.status === "active") {
+        console.log("✅ Subscription ACTIVE → User should be PRO");
+      }
+
+      if (subscription.status === "trialing") {
+        console.log("⏳ Subscription TRIAL → User should be PRO (trial)");
+      }
+
+      if (subscription.status === "past_due") {
+        console.log("⚠️ Subscription PAST DUE");
+      }
+
+      if (subscription.status === "canceled") {
+        console.log("❌ Subscription CANCELED → User should be FREE");
+      }
+
       break;
+    }
+
+    case "customer.subscription.deleted": {
+      const subscription = event.data.object;
+
+      console.log("❌ Subscription deleted");
+      console.log("📊 Status:", subscription.status);
+      console.log("🚫 User should be downgraded to FREE");
+
+      break;
+    }
+
+    case "checkout.session.completed": {
+      const session = event.data.object;
+
+      console.log("💳 Checkout completed");
+      console.log("👤 Customer:", session.customer);
+      console.log("🧾 Subscription:", session.subscription);
+
+      break;
+    }
 
     default:
       console.log("ℹ️ Unhandled event:", event.type);
   }
 
+  // ✅ ALWAYS return 200 to Stripe
   res.status(200).json({ received: true });
 };
 
+// 🔐 CRITICAL FOR STRIPE
 module.exports.config = {
   api: {
     bodyParser: false,
