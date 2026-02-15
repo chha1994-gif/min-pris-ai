@@ -4,13 +4,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
 
-// ✅ CommonJS config (IKKE export!)
-module.exports.config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 module.exports = async function handler(req, res) {
   console.log("🔥 Stripe webhook called");
 
@@ -41,9 +34,7 @@ module.exports = async function handler(req, res) {
 
   } catch (err) {
     console.error("❌ Signature verification failed:", err.message);
-
-    // ✅ BACKTICKS (kritisk)
-    return res.status(400).send(Webhook Error: ${err.message});
+    return res.status(400).send("Webhook Error: " + err.message);
   }
 
   console.log("✅ Event received:", event.type);
@@ -57,14 +48,15 @@ module.exports = async function handler(req, res) {
       console.log("❌ Subscription cancelled");
       break;
 
-    case "checkout.session.completed":
-      console.log("💳 Checkout completed");
-      break;
-
     default:
       console.log("ℹ️ Unhandled event:", event.type);
   }
 
-  // ✅ Stripe MUST receive 200
   res.status(200).json({ received: true });
+};
+
+module.exports.config = {
+  api: {
+    bodyParser: false,
+  },
 };
