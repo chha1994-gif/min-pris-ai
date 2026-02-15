@@ -577,11 +577,11 @@ async function gjenopptaAbonnement() {
   alert("Teknisk feil");
 }
 }
-
-  <script>
+  
+<script>
 function isRunningAsApp() {
   return window.matchMedia('(display-mode: standalone)').matches
-      || window.navigator.standalone === true; // iOS Safari
+      || window.navigator.standalone === true;
 }
 
 window.addEventListener("load", () => {
@@ -590,8 +590,7 @@ window.addEventListener("load", () => {
     if (link) link.style.display = "none";
   }
 });
-
 </script>
-
+  
 </body>
 </html>
