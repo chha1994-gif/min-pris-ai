@@ -578,6 +578,19 @@ async function gjenopptaAbonnement() {
 }
 }
 
+  <script>
+function isRunningAsApp() {
+  return window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true; // iOS Safari
+}
+
+window.addEventListener("load", () => {
+  if (isRunningAsApp()) {
+    const link = document.querySelector(".install-link");
+    if (link) link.style.display = "none";
+  }
+});
+
 </script>
 
 </body>
