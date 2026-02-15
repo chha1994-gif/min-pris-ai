@@ -21,41 +21,6 @@
       border-radius: 14px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
-    .install-tip {
-  position: fixed;
-  bottom: 12px;
-  left: 12px;
-  right: 12px;
-  background: white;
-  border-radius: 12px;
-  padding: 10px 14px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-  font-size: 13px;
-  display: none;
-  align-items: center;
-  justify-content: space-between;
-  z-index: 9999;
-}
-
-.install-tip button {
-  border: none;
-  background: none;
-  font-size: 16px;
-  cursor: pointer;
-  opacity: 0.6;
-}
-
-.install-tip button:hover {
-  opacity: 1;
-}
-
-/* Kun mobil */
-@media (max-width: 768px) {
-  .install-tip {
-    display: flex;
-  }
-}
-    
     .title { text-align: center; margin-bottom: 24px; }
     label { font-weight: 600; display: block; margin-top: 14px; }
     input, textarea {
@@ -586,30 +551,7 @@ async function gjenopptaAbonnement() {
 }
 }
 
-  // INSTALL TIP
-window.addEventListener("load", () => {
-  const tip = document.getElementById("installTip");
-
-  // Kun mobil
-  if (window.innerWidth > 768) return;
-
-  // Hvis allerede lukket → ikke vis
-  if (localStorage.getItem("installTipClosed")) return;
-
-  tip.style.display = "flex";
-
-  document.getElementById("closeInstallTip").onclick = () => {
-    localStorage.setItem("installTipClosed", "1");
-    tip.style.display = "none";
-  };
-});
-
 </script>
-
-  <div id="installTip" class="install-tip">
-  <span>📲 Legg til MinPris som app på hjemmeskjermen</span>
-  <button id="closeInstallTip">✕</button>
-</div>
 
 </body>
 </html>
