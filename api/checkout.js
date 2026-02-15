@@ -1,6 +1,8 @@
 const Stripe = require("stripe");
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2023-10-16",
+});
 
 module.exports = async function handler(req, res) {
   console.log("🔥 Checkout API called");
@@ -18,6 +20,8 @@ module.exports = async function handler(req, res) {
       throw new Error("Missing STRIPE_PRICE_ID");
     }
 
+    const { source } = req.body;
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
 
@@ -30,8 +34,15 @@ module.exports = async function handler(req, res) {
         },
       ],
 
-    success_url: "https://minpris.app/?success=true&session_id={CHECKOUT_SESSION_ID}",
-    cancel_url: "https://minpris.app/?canceled=true"
+      success_url:
+        "https://minpris.app/?success=true&session_id={CHECKOUT_SESSION_ID}",
+
+      cancel_url:
+        "https://minpris.app/?cancelled=true",
+
+      metadata: {
+        source: source || "unknown",
+      },
     });
 
     console.log("✅ Session created:", session.id);
@@ -39,10 +50,10 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ url: session.url });
 
   } catch (err) {
-    console.error("❌ Stripe checkout error:", err.message);
+    console.error("❌ Checkout error:", err.message);
 
-    return res.status(400).json({
-      error: err.message,
+    return res.status(500).json({
+      error: err.message || "Checkout failed",
     });
   }
 };
