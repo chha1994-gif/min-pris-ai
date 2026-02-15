@@ -551,39 +551,7 @@ async function gjenopptaAbonnement() {
 }
 }
 
-window.addEventListener("load", () => {
-  if (!localStorage.getItem("installTipClosed")) {
-    document.getElementById("installTip").style.display = "block";
-  }
-});
 </script>
-  
-  <div id="installTip" style="
-  position: fixed;
-  bottom: 12px;
-  left: 12px;
-  right: 12px;
-  background: white;
-  border-radius: 10px;
-  padding: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  font-size: 14px;
-  z-index: 9999;
-  display: none;
-">
-  📲 Vil du legge MinPris til som app på hjemskjermen?
-
-  <button onclick="
-    localStorage.setItem('installTipClosed','1');
-    this.parentElement.style.display='none';
-  " style="
-    float: right;
-    border: none;
-    background: none;
-    font-size: 16px;
-    cursor: pointer;
-  ">✕</button>
-</div>
 
 </body>
 </html>
