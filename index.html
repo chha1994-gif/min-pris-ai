@@ -578,6 +578,35 @@ async function gjenopptaAbonnement() {
 }
 }
 </script>
+  
+  <script>
+async function checkProStatus() {
+  const customerId = localStorage.getItem("stripeCustomerId");
+  if (!customerId) return;
+
+  try {
+    const res = await fetch("/api/check-pro", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId })
+    });
+
+    const data = await res.json();
+
+    if (data.isPro) {
+      enableProUI();
+    } else {
+      disableProUI();
+    }
+
+  } catch (err) {
+    console.error("checkProStatus error:", err);
+  }
+}
+
+checkProStatus();
+window.addEventListener("focus", checkProStatus);
+</script>
 
 <script>
 function isRunningAsApp() {
