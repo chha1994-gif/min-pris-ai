@@ -1,5 +1,4 @@
 const Stripe = require("stripe");
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 module.exports = async function handler(req, res) {
@@ -8,7 +7,8 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const customerId = req.cookies.stripeCustomerId;
+    const customerId =
+      req.cookies.stripeCustomerId || req.body.customerId;
 
     if (!customerId) {
       return res.status(400).json({ error: "Missing customerId" });
