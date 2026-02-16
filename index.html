@@ -380,6 +380,8 @@ if (params.get("success") && params.get("session_id")) {
 
         // ✅ Lagre Stripe data
         localStorage.setItem("stripeCustomerId", data.customerId);
+        // ✅ KRITISK: gjør Pro synlig i hjemskjerm (PWA)
+        document.cookie = stripeCustomerId=${data.customerId}; path=/; max-age=31536000; SameSite=Lax;
         localStorage.setItem("stripeSubscriptionId", data.subscriptionId);
 
         // ✅ KRITISK for PWA / hjemskjerm
@@ -603,7 +605,18 @@ async function gjenopptaAbonnement() {
   
   <script>
 async function checkProStatus() {
-  const customerId = localStorage.getItem("stripeCustomerId");
+  function getCookie(name) {
+  return document.cookie
+    .split("; ")
+    .find(row => row.startsWith(name + "="))
+    ?.split("=")[1];
+}
+
+let customerId = localStorage.getItem("stripeCustomerId");
+
+if (!customerId) {
+  customerId = getCookie("stripeCustomerId");
+}
 const proFlag = localStorage.getItem("minpris_pro");
 
 if (!customerId && proFlag === "1") {
