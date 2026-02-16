@@ -367,19 +367,33 @@ if (params.get("pro")) {
   localStorage.setItem("minpris_pro", "1");
 }
 
-/* ✅ Stripe success */
+/* ✅ Stripe Success */
 if (params.get("success") && params.get("session_id")) {
+
   fetch("/api/stripe/session?session_id=" + params.get("session_id"))
     .then(res => res.json())
     .then(data => {
+
+      console.log("✅ Stripe session response:", data);
+
       if (data.customerId) {
+
+        // ✅ Lagre Stripe data
         localStorage.setItem("stripeCustomerId", data.customerId);
         localStorage.setItem("stripeSubscriptionId", data.subscriptionId);
+
+        // ✅ KRITISK for PWA / hjemskjerm
         localStorage.setItem("minpris_pro", "1");
         localStorage.setItem("minpris_cancelled", "0");
         localStorage.removeItem("minpris_period_end");
+
+        // ✅ Oppdater UI umiddelbart
+        enableProUI();
         oppdaterProUI();
       }
+    })
+    .catch(err => {
+      console.error("❌ Stripe success flow error:", err);
     });
 }
 
