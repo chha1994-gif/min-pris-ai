@@ -50,7 +50,7 @@ module.exports = async function handler(req, res) {
         break;
 
       default:
-        console.log(Unhandled event type: ${event.type});
+        console.log("Unhandled event type:", event.type);
     }
 
     return res.status(200).json({ received: true });
