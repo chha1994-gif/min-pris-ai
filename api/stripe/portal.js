@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: "https://min-pris-ai.vercel.app/"
+      return_url: "https://minpris.app"
     });
 
     return res.status(200).json({ url: session.url });
