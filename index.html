@@ -604,11 +604,19 @@ async function gjenopptaAbonnement() {
   <script>
 async function checkProStatus() {
   const customerId = localStorage.getItem("stripeCustomerId");
+const proFlag = localStorage.getItem("minpris_pro");
 
-  if (!customerId) {
-    disableProUI();
-    return;
-  }
+if (!customerId && proFlag === "1") {
+  console.log("🟢 Pro fallback via minpris_pro");
+  enableProUI();
+  oppdaterProUI();
+  return;
+}
+
+if (!customerId) {
+  disableProUI();
+  return;
+}
 
   try {
     const res = await fetch("/api/check-pro", {
