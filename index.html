@@ -405,7 +405,8 @@ if (params.get("success") && params.get("session_id")) {
 .catch(err => {
   console.error("❌ Stripe success flow error:", err);
 });
-
+}
+  
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
 
@@ -601,6 +602,11 @@ async function gjenopptaAbonnement() {
       alert("Abonnement gjenopptatt 👍");
     } else {
       alert("Kunne ikke gjenoppta abonnement");
+    }
+
+  } catch (err) {
+    alert("Teknisk feil");
+  }
 }
 
 </script>
