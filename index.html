@@ -374,40 +374,37 @@ if (params.get("success") && params.get("session_id")) {
     .then(res => res.json())
     .then(data => {
 
-      console.log("✅ Stripe session response:", data);
+  console.log("✅ Stripe session response:", data);
 
-      if (data.customerId) {
+  if (data.customerId) {
 
-  localStorage.setItem("stripeCustomerId", data.customerId);
+    localStorage.setItem("stripeCustomerId", data.customerId);
 
-  // ✅ Guard før cookie
-  if (data.customerId?.startsWith("cus_")) {
+    if (data.customerId?.startsWith("cus_")) {
+      document.cookie =
+        "stripeCustomerId=" + data.customerId +
+        "; path=/; max-age=31536000; Secure; SameSite=None";
+    } else {
+      console.warn("⚠️ Ugyldig customerId:", data.customerId);
+    }
 
-  document.cookie =
-    "stripeCustomerId=" + data.customerId +
-    "; path=/; max-age=31536000; Secure; SameSite=None";
+    localStorage.setItem("stripeSubscriptionId", data.subscriptionId);
 
-} else {
-  console.warn("⚠️ Ugyldig customerId:", data.customerId);
-}
+    localStorage.setItem("minpris_pro", "1");
+    localStorage.setItem("minpris_cancelled", "0");
+    localStorage.removeItem("minpris_period_end");
 
-localStorage.setItem("stripeSubscriptionId", data.subscriptionId);
+    console.log("💾 customerId:", data.customerId);
+    console.log("🍪 cookie:", document.cookie);
 
-localStorage.setItem("minpris_pro", "1");
-localStorage.setItem("minpris_cancelled", "0");
-localStorage.removeItem("minpris_period_end");
+    enableProUI();
+    oppdaterProUI();
+  }   // ✅ ← DENNE MANGLER HOS DEG
 
-console.log("💾 customerId:", data.customerId);
-console.log("🍪 cookie:", document.cookie);
-
-enableProUI();
-oppdaterProUI();
-
-}) // ← denne er riktig (lukker .then(data => { ... })
+})    // ✅ lukker .then
 .catch(err => {
   console.error("❌ Stripe success flow error:", err);
 });
-
 
 const beskrivelseEl = document.getElementById("beskrivelse");
 const startNyBtn = document.getElementById("startNyBtn");
