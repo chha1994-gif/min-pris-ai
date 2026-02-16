@@ -1,3 +1,4 @@
+
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -7,14 +8,17 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { customerId } = req.body;
+    const customerId =
+      req.cookies.stripeCustomerId || req.body.customerId;
 
-console.log("CustomerId received:", JSON.stringify(customerId));
-console.log("Stripe key prefix:", process.env.STRIPE_SECRET_KEY?.slice(0, 7));
+    console.log("CustomerId resolved:", JSON.stringify(customerId));
+    console.log("Stripe key prefix:", process.env.STRIPE_SECRET_KEY?.slice(0, 7));
 
-if (!customerId) {
-  return res.status(400).json({ error: "Missing customerId" });
-}
+    if (!customerId) {
+      return res.status(200).json({ pro: false }); 
+      // Ikke 400 → unngå UI-feil
+    }
+
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: "all",
@@ -33,8 +37,8 @@ if (!customerId) {
 
   } catch (err) {
     console.error("❌ check-pro error:", err);
-    return res.status(500).json({
-      error: err.message || "Server error",
-    });
+
+    // KRITISK: Ikke returner 500 → ødelegger frontend state
+    return res.status(200).json({ pro: false });
   }
 };
