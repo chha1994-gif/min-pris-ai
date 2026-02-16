@@ -14,7 +14,6 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: "Missing customerId" });
     }
 
-    // Hent subscriptions fra Stripe
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: "all",
@@ -25,16 +24,10 @@ module.exports = async function handler(req, res) {
 
     const isPro = sub && sub.status === "active";
 
-    console.log("🔎 Pro check:", {
-      customerId,
-      status: sub ? sub.status : "none",
-      isPro,
-    });
-
-    return res.status(200).json({ isPro });
+    res.status(200).json({ pro: isPro });
 
   } catch (err) {
     console.error("❌ Check-pro error:", err);
-    return res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: err.message });
   }
 };
