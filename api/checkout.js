@@ -35,7 +35,7 @@ module.exports = async function handler(req, res) {
       ],
 
       success_url:
-        "https://minpris.app/?success=true&session_id={CHECKOUT_SESSION_ID}",
+        "https://minpris.app/?success=1&session_id={CHECKOUT_SESSION_ID}&customer={CUSTOMER_ID}",
 
       cancel_url:
         "https://minpris.app/?cancelled=true",
