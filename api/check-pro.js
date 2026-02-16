@@ -19,13 +19,15 @@ module.exports = async function handler(req, res) {
       limit: 1,
     });
 
-    const sub = subscriptions.data.length ? subscriptions.data[0] : null;
+    const sub = subscriptions.data.length
+      ? subscriptions.data[0]
+      : null;
 
     const isPro =
       sub &&
       (sub.status === "active" || sub.status === "trialing");
 
-    return res.status(200).json({ isPro });
+    return res.status(200).json({ pro: isPro });
 
   } catch (err) {
     console.error("❌ check-pro error:", err);
