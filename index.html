@@ -383,30 +383,30 @@ if (params.get("success") && params.get("session_id")) {
   // ✅ Guard før cookie
   if (data.customerId?.startsWith("cus_")) {
 
-    document.cookie =
-  "stripeCustomerId=" + data.customerId +
-  "; path=/; max-age=31536000; Secure; SameSite=None";
+  document.cookie =
+    "stripeCustomerId=" + data.customerId +
+    "; path=/; max-age=31536000; Secure; SameSite=None";
 
-  } else {
-    console.warn("⚠️ Ugyldig customerId:", data.customerId);
-  }
-
-  localStorage.setItem("stripeSubscriptionId", data.subscriptionId);
-
-  localStorage.setItem("minpris_pro", "1");
-  localStorage.setItem("minpris_cancelled", "0");
-  localStorage.removeItem("minpris_period_end");
-
-  console.log("💾 customerId:", data.customerId);
-  console.log("🍪 cookie:", document.cookie);
-
-  enableProUI();
-  oppdaterProUI();
-});
-    .catch(err => {
-      console.error("❌ Stripe success flow error:", err);
-    });
+} else {
+  console.warn("⚠️ Ugyldig customerId:", data.customerId);
 }
+
+localStorage.setItem("stripeSubscriptionId", data.subscriptionId);
+
+localStorage.setItem("minpris_pro", "1");
+localStorage.setItem("minpris_cancelled", "0");
+localStorage.removeItem("minpris_period_end");
+
+console.log("💾 customerId:", data.customerId);
+console.log("🍪 cookie:", document.cookie);
+
+enableProUI();
+oppdaterProUI();
+
+}) // ← denne er riktig (lukker .then(data => { ... }))
+.catch(err => {
+  console.error("❌ Stripe success flow error:", err);
+});
 
 
 const beskrivelseEl = document.getElementById("beskrivelse");
