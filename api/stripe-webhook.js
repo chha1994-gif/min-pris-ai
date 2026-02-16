@@ -14,7 +14,6 @@ module.exports = async function handler(req, res) {
 
   try {
     const rawBody = await getRawBody(req);
-
     const signature = req.headers["stripe-signature"];
 
     event = stripe.webhooks.constructEvent(
@@ -25,7 +24,7 @@ module.exports = async function handler(req, res) {
 
   } catch (err) {
     console.error("❌ Webhook signature verification failed:", err.message);
-   return res.status(400).send("Webhook Error: " + err.message);
+    return res.status(400).send("Webhook Error: " + err.message);
   }
 
   try {
@@ -54,11 +53,11 @@ module.exports = async function handler(req, res) {
         console.log(Unhandled event type: ${event.type});
     }
 
-    res.status(200).json({ received: true });
+    return res.status(200).json({ received: true });
 
   } catch (err) {
     console.error("❌ Webhook handler error:", err);
-    res.status(500).send("Webhook handler failed");
+    return res.status(500).send("Webhook handler failed");
   }
 };
 
