@@ -301,6 +301,15 @@ function oppdaterProUI() {
     reactivateBtn.classList.toggle("hidden", !(pro && cancelled));
   }
 }
+  function enableProUI() {
+  localStorage.setItem("minpris_pro", "1");
+  oppdaterProUI();
+}
+
+function disableProUI() {
+  localStorage.removeItem("minpris_pro");
+  oppdaterProUI();
+}
 
 async function startStripeCheckout(source) {
   try {
