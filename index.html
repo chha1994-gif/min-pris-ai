@@ -629,6 +629,15 @@ if (!customerId) {
     console.log("🍪 → 💾 Cookie synced to LS");
   }
 }
+
+// ✅ LS → Cookie failsafe
+if (customerId && !getCookie("stripeCustomerId")) {
+  document.cookie =
+    "stripeCustomerId=" + customerId +
+    "; path=/; max-age=31536000; Secure; SameSite=None";
+
+  console.log("💾 → 🍪 LS synced back to cookie");
+}
 const proFlag = localStorage.getItem("minpris_pro");
 
 if (!customerId && proFlag === "1") {
