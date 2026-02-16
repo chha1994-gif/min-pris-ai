@@ -1,5 +1,4 @@
 const Stripe = require("stripe");
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 module.exports = async function handler(req, res) {
@@ -20,14 +19,18 @@ module.exports = async function handler(req, res) {
       limit: 1,
     });
 
-    const sub = subscriptions.data[0];
+    const sub = subscriptions.data.length ? subscriptions.data[0] : null;
 
-    const isPro = sub && sub.status === "active";
+    const isPro =
+      sub &&
+      (sub.status === "active" || sub.status === "trialing");
 
-    res.status(200).json({ pro: isPro });
+    return res.status(200).json({ isPro });
 
   } catch (err) {
-    console.error("❌ Check-pro error:", err);
-    res.status(500).json({ error: err.message });
+    console.error("❌ check-pro error:", err);
+    return res.status(500).json({
+      error: err.message || "Server error",
+    });
   }
 };
