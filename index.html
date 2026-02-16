@@ -614,16 +614,20 @@ async function gjenopptaAbonnement() {
   <script>
 async function checkProStatus() {
   function getCookie(name) {
-  return document.cookie
-    .split("; ")
-    .find(row => row.startsWith(name + "="))
-    ?.split("=")[1];
+  const value = "; " + document.cookie;
+  const parts = value.split("; " + name + "=");
+  if (parts.length === 2) return parts.pop().split(";").shift();
 }
 
 let customerId = localStorage.getItem("stripeCustomerId");
 
 if (!customerId) {
   customerId = getCookie("stripeCustomerId");
+
+  if (customerId) {
+    localStorage.setItem("stripeCustomerId", customerId);
+    console.log("🍪 → 💾 Cookie synced to LS");
+  }
 }
 const proFlag = localStorage.getItem("minpris_pro");
 
