@@ -8,7 +8,7 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { customerId } = req.body;
+    const customerId = req.cookies.stripeCustomerId;
 
     if (!customerId) {
       return res.status(400).json({ error: "Missing customerId" });
