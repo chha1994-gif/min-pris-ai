@@ -9,10 +9,12 @@ module.exports = async function handler(req, res) {
   try {
     const { customerId } = req.body;
 
-    if (!customerId) {
-      return res.status(400).json({ error: "Missing customerId" });
-    }
+console.log("CustomerId received:", JSON.stringify(customerId));
+console.log("Stripe key prefix:", process.env.STRIPE_SECRET_KEY?.slice(0, 7));
 
+if (!customerId) {
+  return res.status(400).json({ error: "Missing customerId" });
+}
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: "all",
