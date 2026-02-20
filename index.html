@@ -147,6 +147,12 @@
       width:90%;
       text-align:center;
     }
+
+    .calc-helper {
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 3px;
+}
   </style>
 </head>
 
@@ -175,7 +181,12 @@
 
 <label>Arbeidsbeskrivelse</label>
 <textarea id="beskrivelse" rows="4"
-  placeholder="Beskriv jobben, f.eks: bad - 25t riving, 8t sanering (tips: tast «enter» for ny linje)"></textarea>
+  placeholder="Beskriv jobben, f.eks: bad - 25t riving, 8t sanering (tips: tast 'enter' for ny linje)">
+</textarea>
+
+<div class="calc-helper">
+  (Utregning basert på 7,5 t per arbeidsdag)
+</div>
 
 <div class="start-new-row">
   <button type="button" id="startNyBtn"
