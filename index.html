@@ -153,6 +153,11 @@
   color: #999;
   margin-top: 3px;
 }
+    .input-hint {
+  font-size: 0.8rem;
+  color: #999;
+  font-weight: normal;
+}
   </style>
 </head>
 
@@ -227,8 +232,10 @@
 <label>Materiell / forbruk totalt (kr)</label>
 <input id="materiell" type="number" value="0" />
 
-<label>HMS-forbruk per dag (kr) (f.eks masker, hansker, etc.)</label>
-<input id="hms" type="number" value="0" />
+<label>
+  HMS-forbruk per dag (kr)
+  <span class="input-hint">(f.eks masker, hansker, etc.)</span>
+</label>
 
 <div id="ekstraPoster"></div>
 <button type="button" class="blue" onclick="leggTilEkstraPost()">+ Legg til ekstra post</button>
