@@ -311,7 +311,7 @@ function harPro() {
     const data = await res.json();
 
     if (data.pro) {
-      document.cookie = "minpris_pro=true; path=/";
+      document.cookie = "minpris_pro=1; path=/";
       localStorage.setItem("minpris_pro", "1");
 
       if (data.customerId) {
