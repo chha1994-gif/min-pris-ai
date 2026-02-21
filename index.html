@@ -296,7 +296,7 @@ function harPro() {
   return localStorage.getItem("minpris_pro") === "1";
 }
   
-  async function restoreProByEmail() {
+  window.restoreProByEmail = async function () {
   const email = prompt("Skriv inn e-posten din");
 
   if (!email) return;
