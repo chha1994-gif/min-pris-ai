@@ -719,6 +719,16 @@ if (!customerId && proFlag === "1") {
 }
 
 if (!customerId) {
+
+  const proFlag = localStorage.getItem("minpris_pro");
+
+  if (proFlag === "1") {
+    console.log("🟢 Pro fallback (no customerId yet)");
+    enableProUI();
+    oppdaterProUI();
+    return;
+  }
+
   disableProUI();
   return;
 }
