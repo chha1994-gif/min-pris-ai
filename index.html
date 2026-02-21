@@ -295,6 +295,40 @@ let stripeSource = null;
 function harPro() {
   return localStorage.getItem("minpris_pro") === "1";
 }
+  
+  async function restoreProByEmail() {
+  const email = prompt("Skriv inn e-posten din");
+
+  if (!email) return;
+
+  try {
+    const res = await fetch("/api/check-pro", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+
+    const data = await res.json();
+
+    if (data.pro) {
+      document.cookie = "minpris_pro=true; path=/";
+      localStorage.setItem("minpris_pro", "1");
+
+      if (data.customerId) {
+        localStorage.setItem("stripeCustomerId", data.customerId);
+      }
+
+      alert("✅ Pro gjenopprettet!");
+      location.reload();
+    } else {
+      alert("❌ Fant ikke aktivt Pro-abonnement");
+    }
+
+  } catch (err) {
+    alert("⚠ Klarte ikke kontakte server");
+  }
+}
+  
 function gratisBrukt(type) {
   return localStorage.getItem("minpris_free_" + type) === "1";
 }
