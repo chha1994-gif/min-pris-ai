@@ -271,6 +271,13 @@
       Pro (49 kr/mnd) gir ubegrenset km-beregning og AI-tilbud.
     </p>
     <button class="blue" onclick="fortsettStripe()">Fortsett til betaling</button>
+    <button id="upgradeBtn">
+  🚀 Oppgrader til Pro
+</button>
+
+<button onclick="restoreProByEmail()" id="restoreBtn" style="display:none;">
+  🔐 Allerede Pro?
+</button>
     <button class="gray" onclick="lukkStripeModal()">Ikke nå</button>
   </div>
 </div>
@@ -731,6 +738,15 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/sw.js");
   });
 }
+</script>
+
+  <script>
+window.addEventListener("load", () => {
+  if (!harPro()) {
+    const btn = document.getElementById("restoreBtn");
+    if (btn) btn.style.display = "block";
+  }
+});
 </script>
   
 </body>
