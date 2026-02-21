@@ -1,0 +1,24 @@
+import Stripe from "stripe";
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export default async function handler(req, res) {
+  const { sessionId } = req.body;
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    const customerId = session.customer;
+
+    const subs = await stripe.subscriptions.list({
+      customer: customerId,
+      status: "active",
+      limit: 1
+    });
+
+    const pro = subs.data.length > 0;
+
+    res.status(200).json({ pro, customerId });
+  } catch (err) {
+    res.status(200).json({ pro: false });
+  }
+}
