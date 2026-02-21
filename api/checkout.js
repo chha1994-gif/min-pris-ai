@@ -25,6 +25,9 @@ module.exports = async function handler(req, res) {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
 
+      success_url: "https://minpris.app/success.html?session_id={CHECKOUT_SESSION_ID}",
+      cancel_url: "https://minpris.app/cancel.html",
+
       payment_method_types: ["card"],
 
       line_items: [
@@ -33,12 +36,6 @@ module.exports = async function handler(req, res) {
           quantity: 1,
         },
       ],
-
-      success_url:
-        "https://minpris.app/?success=1&session_id={CHECKOUT_SESSION_ID}&customer={CUSTOMER_ID}",
-
-      cancel_url:
-        "https://minpris.app/?cancelled=true",
 
       metadata: {
         source: source || "unknown",
