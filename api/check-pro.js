@@ -1,4 +1,3 @@
-
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -8,31 +7,50 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const customerId =
-  req.cookies.stripeCustomerId || req.body.customerId;
+    const { customerId, email } = req.body;
 
-console.log("CustomerId resolved:", JSON.stringify(customerId));
+    console.log("📨 check-pro body:", req.body);
 
-if (!customerId) {
-  return res.status(200).json({ pro: false });
-}
+    let resolvedCustomerId = customerId;
 
-const subscriptions = await stripe.subscriptions.list({
-  customer: customerId,
-  status: "all",
-  limit: 10,
-});
+    // ✅ Hvis email sendt → finn customer
+    if (!resolvedCustomerId && email) {
+      const customers = await stripe.customers.list({
+        email,
+        limit: 1,
+      });
 
-const isPro = subscriptions.data.some(
-  sub => sub.status === "active" || sub.status === "trialing"
-);
+      if (!customers.data.length) {
+        return res.status(200).json({ pro: false });
+      }
 
-return res.status(200).json({ pro: isPro });
+      resolvedCustomerId = customers.data[0].id;
+    }
+
+    // ✅ Ingen ID i det hele tatt
+    if (!resolvedCustomerId) {
+      return res.status(200).json({ pro: false });
+    }
+
+    const subscriptions = await stripe.subscriptions.list({
+      customer: resolvedCustomerId,
+      status: "all",
+      limit: 10,
+    });
+
+    const isPro = subscriptions.data.some(
+      sub => sub.status === "active" || sub.status === "trialing"
+    );
+
+    return res.status(200).json({
+      pro: isPro,
+      customerId: resolvedCustomerId,
+    });
 
   } catch (err) {
     console.error("❌ check-pro error:", err);
 
-    // KRITISK: Ikke returner 500 → ødelegger frontend state
+    // KRITISK → aldri 500 til frontend
     return res.status(200).json({ pro: false });
   }
 };
