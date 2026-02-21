@@ -9,31 +9,25 @@ module.exports = async function handler(req, res) {
 
   try {
     const customerId =
-      req.cookies.stripeCustomerId || req.body.customerId;
+  req.cookies.stripeCustomerId || req.body.customerId;
 
-    console.log("CustomerId resolved:", JSON.stringify(customerId));
-    console.log("Stripe key prefix:", process.env.STRIPE_SECRET_KEY?.slice(0, 7));
+console.log("CustomerId resolved:", JSON.stringify(customerId));
 
-    if (!customerId) {
-      return res.status(200).json({ pro: false }); 
-      // Ikke 400 → unngå UI-feil
-    }
+if (!customerId) {
+  return res.status(200).json({ pro: false });
+}
 
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "all",
-      limit: 1,
-    });
+const subscriptions = await stripe.subscriptions.list({
+  customer: customerId,
+  status: "all",
+  limit: 10,
+});
 
-    const sub = subscriptions.data.length
-      ? subscriptions.data[0]
-      : null;
+const isPro = subscriptions.data.some(
+  sub => sub.status === "active" || sub.status === "trialing"
+);
 
-    const isPro =
-      sub &&
-      (sub.status === "active" || sub.status === "trialing");
-
-    return res.status(200).json({ pro: isPro });
+return res.status(200).json({ pro: isPro });
 
   } catch (err) {
     console.error("❌ check-pro error:", err);
