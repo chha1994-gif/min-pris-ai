@@ -684,63 +684,59 @@ async function gjenopptaAbonnement() {
   
   <script>
 async function checkProStatus() {
+
   function getCookie(name) {
-  const value = "; " + document.cookie;
-  const parts = value.split("; " + name + "=");
-  if (parts.length === 2) return parts.pop().split(";").shift();
-}
-
-let customerId = localStorage.getItem("stripeCustomerId");
-
-if (!customerId) {
-  customerId = getCookie("stripeCustomerId");
-
-  if (customerId) {
-    localStorage.setItem("stripeCustomerId", customerId);
-    console.log("🍪 → 💾 Cookie synced to LS");
+    const value = "; " + document.cookie;
+    const parts = value.split("; " + name + "=");
+    if (parts.length === 2) return parts.pop().split(";").shift();
   }
-}
 
-// ✅ LS → Cookie failsafe
-if (customerId && !getCookie("stripeCustomerId")) {
-  document.cookie =
-    "stripeCustomerId=" + customerId +
-    "; path=/; max-age=31536000; Secure; SameSite=None";
+  let customerId = localStorage.getItem("stripeCustomerId");
 
-  console.log("💾 → 🍪 LS synced back to cookie");
-}
-const proFlag = localStorage.getItem("minpris_pro");
+  // ✅ Cookie → LS sync
+  if (!customerId) {
+    customerId = getCookie("stripeCustomerId");
 
-if (!customerId && proFlag === "1") {
-  console.log("🟢 Pro fallback via minpris_pro");
-  enableProUI();
-  oppdaterProUI();
-  return;
-}
+    if (customerId) {
+      localStorage.setItem("stripeCustomerId", customerId);
+      console.log("🍪 → 💾 Cookie synced to LS");
+    }
+  }
 
-if (!customerId) {
+  // ✅ LS → Cookie failsafe
+  if (customerId && !getCookie("stripeCustomerId")) {
+    document.cookie =
+      "stripeCustomerId=" + customerId +
+      "; path=/; max-age=31536000; Secure; SameSite=None";
+
+    console.log("💾 → 🍪 LS synced back to cookie");
+  }
 
   const proFlag = localStorage.getItem("minpris_pro");
 
-  if (proFlag === "1") {
-    console.log("🟢 Pro fallback (no customerId yet)");
+  // ✅ Fallback hvis vi mangler ID men LS sier Pro
+  if (!customerId && proFlag === "1") {
+    console.log("🟢 Pro fallback via minpris_pro");
     enableProUI();
     oppdaterProUI();
     return;
   }
 
-  disableProUI();
-  return;
-}
+  if (!customerId) {
+    disableProUI();
+    return;
+  }
 
   try {
     const res = await fetch("/api/check-pro", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customerId })
+      body: JSON.stringify({ customerId })   // ✅ KRITISK LINJE
     });
 
     const data = await res.json();
+
+    console.log("🔎 check-pro response:", data);
 
     if (data.pro) {
       enableProUI();
@@ -748,7 +744,7 @@ if (!customerId) {
       disableProUI();
     }
 
-    oppdaterProUI(); // ✅ KRITISK
+    oppdaterProUI();   // ✅ KRITISK
 
   } catch (err) {
     console.error("checkProStatus error:", err);
