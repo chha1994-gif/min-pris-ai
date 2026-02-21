@@ -19,12 +19,14 @@ export default async function handler(req, res) {
     const customerId = customers.data[0].id;
 
     const subs = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1
-    });
+  customer: customerId,
+  status: "all",
+  limit: 10
+});
 
-    const pro = subs.data.length > 0;
+const pro = subs.data.some(
+  sub => sub.status === "active" || sub.status === "trialing"
+);
 
     res.json({ pro, customerId });
 
