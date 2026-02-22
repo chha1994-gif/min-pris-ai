@@ -358,6 +358,7 @@ function oppdaterProUI(pro) {
   const badge = document.getElementById("proBadge");
   const cancelBtn = document.getElementById("cancelBtn");
   const reactivateBtn = document.getElementById("reactivateBtn");
+  const restoreBtn = document.getElementById("restoreProBtn");
 
   if (badge) badge.classList.toggle("hidden", !pro);
   if (cancelBtn) cancelBtn.style.display = pro ? "block" : "none";
@@ -374,6 +375,15 @@ function oppdaterProUI(pro) {
   if (reactivateBtn) {
     reactivateBtn.classList.toggle("hidden", !(pro && cancelled));
   }
+  if (restoreBtn) {
+    const stripeCustomerId = hentStripeCustomerId();
+
+    if (!pro && stripeCustomerId) {
+        restoreBtn.style.display = "block";
+    } else {
+        restoreBtn.style.display = "none";
+    }
+}
 }
   function enableProUI() {
   localStorage.setItem("minpris_pro", "1");
