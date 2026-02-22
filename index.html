@@ -764,9 +764,17 @@ async function checkProStatus() {
     oppdaterProUI();   // ✅ KRITISK
 
   } catch (err) {
-   console.log("Offline – bruker lokal Pro-state");
+  console.log("Offline – bruker lokal Pro-state");
 
-   oppdaterProUI();   // ← KRITISK
+  const proFlag = localStorage.getItem("minpris_pro");
+
+  if (proFlag === "1") {
+    enableProUI();
+  } else {
+    disableProUI();
+  }
+
+  oppdaterProUI();
 }
 }
 
