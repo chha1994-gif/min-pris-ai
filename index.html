@@ -763,7 +763,7 @@ async function checkProStatus() {
 
     oppdaterProUI();   // ✅ KRITISK
 
-  catch (err) {
+  } catch (err) {
    console.log("Offline – bruker lokal Pro-state");
 
    oppdaterProUI();   // ← KRITISK
