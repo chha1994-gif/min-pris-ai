@@ -293,6 +293,13 @@ let kalkyle = null;
 let ekstraPoster = [];
 let stripeSource = null;
 
+  function formatKr(verdi) {
+  return Number(verdi).toLocaleString("no-NO", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  });
+}
+
 function harPro() {
   const hasLS = localStorage.getItem("minpris_pro") === "1";
   const hasCookie =
@@ -596,17 +603,17 @@ function beregn() {
 
   resultat.textContent =
 `Detaljert pris (eks. mva):
-– Arbeid: ${arbeid} kr
-– Kjøring: ${kjøring} kr
-– Bom: ${bom} kr
-– HMS: ${hmsTot} kr
-– Avfall: ${avf} kr
-– Materiell: ${mat} kr
-${ekstraPoster.map(p=>`– ${p.navn}: ${p.pris} kr`).join("\n")}
+– Arbeid: ${formatKr(arbeid)} kr
+– Kjøring: ${formatKr(kjøring)} kr
+– Bom: ${formatKr(bom)} kr
+– HMS: ${formatKr(hmsTot)} kr
+– Avfall: ${formatKr(avf)} kr
+– Materiell: ${formatKr(mat)} kr
+${ekstraPoster.map(p=>`– ${p.navn}: ${formatKr(p.pris)} kr`).join("\n")}
 
-Sum eks. mva: ${totalEks} kr
-Totalt inkl. mva (25%): ${totalInk} kr`;
-
+Sum eks. mva: ${formatKr(totalEks)} kr
+Totalt inkl. mva (25%): ${formatKr(totalInk)} kr`;
+  
   aiBtn.disabled = false;
 }
 
