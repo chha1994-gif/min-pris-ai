@@ -345,8 +345,9 @@ function gratisBrukt(type) {
 function merkGratisBrukt(type) {
   localStorage.setItem("minpris_free_" + type, "1");
 }
-  function hentStripeCustomerId() {
-   ...
+ function hentStripeCustomerId() {
+  const match = document.cookie.match(/stripeCustomerId=([^;]+)/);
+  return match ? match[1] : null;
 }
 
 /* ✅ OPPDATERT */
