@@ -657,14 +657,34 @@ async function åpnePortal() {
     return alert("Fant ikke abonnement.");
   }
 
-  const res = await fetch("/api/stripe/portal", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ customerId })
-  });
+  try {
+    const res = await fetch("/api/stripe/portal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId })
+    });
 
-  const data = await res.json();
-  if (data.url) location.href = data.url;
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("❌ Portal HTTP error:", res.status, text);
+      alert("Portalfeil (" + res.status + ")");
+      return;
+    }
+
+    const data = await res.json();
+
+    if (!data.url) {
+      console.error("❌ Portal URL mangler:", data);
+      alert("Kunne ikke åpne kundeportal");
+      return;
+    }
+
+    location.href = data.url;
+
+  } catch (err) {
+    console.error("💥 Portal crash:", err);
+    alert("Klarte ikke åpne portal");
+  }
 }
 
 /* ✅ NY */
