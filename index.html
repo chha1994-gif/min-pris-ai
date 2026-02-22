@@ -347,8 +347,11 @@ function merkGratisBrukt(type) {
 }
 
 /* ✅ OPPDATERT */
-function oppdaterProUI() {
-  const pro = harPro();
+function oppdaterProUI(pro) {
+
+    if (pro === undefined) {
+        pro = harPro();   // ← KRITISK
+    }
   const cancelled = localStorage.getItem("minpris_cancelled") === "1";
   const periodEnd = localStorage.getItem("minpris_period_end");
 
