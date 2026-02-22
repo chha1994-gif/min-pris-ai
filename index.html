@@ -729,6 +729,15 @@ async function checkProStatus() {
     console.log("💾 → 🍪 LS synced back to cookie");
   }
 
+  const proFlagEarly =
+    localStorage.getItem("minpris_pro") ||
+    (document.cookie.includes("minpris_pro=1") ? "1" : null);
+
+if (proFlagEarly === "1") {
+    console.log("🟢 Early Pro restore (offline safe)");
+    document.body.classList.add("pro");
+}
+
   const proFlag = localStorage.getItem("minpris_pro");
 
   // ✅ Fallback hvis vi mangler ID men LS sier Pro
