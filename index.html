@@ -380,14 +380,9 @@ function oppdaterProUI(pro) {
   if (reactivateBtn) {
     reactivateBtn.classList.toggle("hidden", !(pro && cancelled));
   }
-  if (restoreBtn) {
-    const stripeCustomerId = hentStripeCustomerId();
-
-    if (!pro && stripeCustomerId) {
-        restoreBtn.style.display = "block";
-    } else {
-        restoreBtn.style.display = "none";
-    }
+    if (restoreBtn) {
+  restoreBtn.style.display = "block";
+}
 }
 }
   function enableProUI() {
