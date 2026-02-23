@@ -265,21 +265,26 @@
 
 <div id="stripeModal" class="modal hidden">
   <div class="modal-box">
-    <h3>MinPris Pro</h3>
-    <p>
-      Du har brukt gratisgrensen.<br><br>
-      Pro (49 kr/mnd) gir ubegrenset km-beregning og AI-tilbud.
-    </p>
-    <button class="blue" onclick="fortsettStripe()">Fortsett til betaling</button>
-    <button id="upgradeBtn">
-  🚀 Oppgrader til Pro
-</button>
 
-<button onclick="restoreProByEmail()" 
-        id="restoreProBtn">
-  🔐 Allerede Pro?
-</button>
-    <button class="gray" onclick="lukkStripeModal()">Ikke nå</button>
+    <h3>MinPris Pro</h3>
+
+    <p>
+      Fortsett uten begrensninger ✨<br><br>
+      Pro (49 kr/md) gir ubegrenset km-beregning og AI-tilbud.
+    </p>
+
+    <button class="blue" onclick="fortsettStripe()">
+      🚀 Oppgrader til Pro
+    </button>
+
+    <button class="outline" id="stripeLoginBtn" onclick="openStripeLogin()">
+      💳 Administrer abonnement
+    </button>
+
+    <button class="gray" onclick="lukkStripeModal()">
+      Ikke nå
+    </button>
+
   </div>
 </div>
 
