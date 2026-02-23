@@ -315,17 +315,19 @@ let stripeSource = null;
 }
 
 function harPro() {
-  const hasLS = localStorage.getItem("minpris_pro") === "1";
+
+  const hasLS = localStorage.getItem("minpris_pro") === "1"
   const hasCookie =
     document.cookie.includes("minpris_pro=1") ||
-    document.cookie.includes("minpris_pro=true");
+    document.cookie.includes("minpris_pro=true")
 
+  // Sync cookie → LS (fortsatt smart)
   if (!hasLS && hasCookie) {
-    localStorage.setItem("minpris_pro", "1");
-    return true;
+    localStorage.setItem("minpris_pro", "1")
+    return true
   }
 
-  return hasLS || hasCookie;
+  return hasLS || hasCookie
 }
   
   window.restoreProByEmail = async function () {
