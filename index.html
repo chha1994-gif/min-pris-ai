@@ -868,13 +868,15 @@ if ("serviceWorker" in navigator) {
   const customerId = getStripeCustomerId()
 
   if (!customerId) {
-    showAlreadyProFlow()
+    showMessage("Fant ingen aktiv Pro.")
     return
   }
 
   const btn = document.getElementById("stripeLoginBtn")
-  btn.disabled = true
-  btn.innerText = "Sender..."
+  if (btn) {
+    btn.disabled = true
+    btn.innerText = "Åpner Stripe..."
+  }
 
   try {
     const res = await fetch("/api/create-portal-session", {
@@ -890,15 +892,17 @@ if ("serviceWorker" in navigator) {
       return
     }
 
-    showMessage("Ingen aktiv Pro funnet.")
+    showMessage("Kunne ikke åpne abonnement.")
 
   } catch (err) {
     console.error(err)
     showMessage("Noe gikk galt.")
   }
 
-  btn.disabled = false
-  btn.innerText = "Logg inn"
+  if (btn) {
+    btn.disabled = false
+    btn.innerText = "💳 Administrer abonnement"
+  }
 }
 window.addEventListener("load", () => {
   if (!harPro()) {
