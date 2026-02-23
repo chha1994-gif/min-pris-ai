@@ -859,6 +859,42 @@ if ("serviceWorker" in navigator) {
 </script>
 
   <script>
+    async function openStripeLogin() {
+  const customerId = getStripeCustomerId()
+
+  if (!customerId) {
+    showAlreadyProFlow()
+    return
+  }
+
+  const btn = document.getElementById("stripeLoginBtn")
+  btn.disabled = true
+  btn.innerText = "Sender..."
+
+  try {
+    const res = await fetch("/api/create-portal-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId })
+    })
+
+    const data = await res.json()
+
+    if (data.url) {
+      window.location.href = data.url
+      return
+    }
+
+    showMessage("Ingen aktiv Pro funnet.")
+
+  } catch (err) {
+    console.error(err)
+    showMessage("Noe gikk galt.")
+  }
+
+  btn.disabled = false
+  btn.innerText = "Logg inn"
+}
 window.addEventListener("load", () => {
   if (!harPro()) {
     const btn = document.getElementById("restoreBtn");
