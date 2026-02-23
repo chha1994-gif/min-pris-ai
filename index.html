@@ -389,6 +389,7 @@ function oppdaterProUI(pro) {
 
   if (badge) badge.classList.toggle("hidden", !pro);
   if (cancelBtn) cancelBtn.style.display = pro ? "block" : "none";
+  if (stripeLoginBtn) stripeLoginBtn.style.display = pro ? "block" : "none";
 
   if (badge && pro) {
     if (cancelled && periodEnd) {
