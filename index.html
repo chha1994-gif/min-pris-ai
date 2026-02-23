@@ -331,37 +331,46 @@ function harPro() {
 }
   
   window.restoreProByEmail = async function () {
+
   const email = prompt("Skriv inn e-posten din");
 
   if (!email) return;
 
   try {
+
     const res = await fetch("/api/check-pro", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email })
-});
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
 
     const data = await res.json();
 
-    if (data.pro) {
-      document.cookie = "minpris_pro=1; path=/";
-      localStorage.setItem("minpris_pro", "1");
+    if (data.customerId) {
 
-      if (data.customerId) {
-        localStorage.setItem("stripeCustomerId", data.customerId);
-      }
+      // ✅ Lagre kun Stripe customerId
+      localStorage.setItem("stripeCustomerId", data.customerId);
 
-      alert("✅ Pro gjenopprettet!");
-      location.reload();
-    } else {
-      alert("❌ Fant ikke aktivt Pro-abonnement");
+      document.cookie =
+        "stripeCustomerId=" + data.customerId +
+        "; path=/; max-age=31536000; Secure; SameSite=Lax";
+
+      alert("✅ Konto funnet – oppdaterer status");
+
+      // ✅ La Stripe truth avgjøre Pro
+      checkProStatus();
+
+      return;
     }
 
+    alert("Fant ingen aktiv Pro.");
+
   } catch (err) {
-    alert("⚠ Klarte ikke kontakte server");
+
+    console.error(err);
+    alert("Noe gikk galt.");
   }
-}
+};
   
 function gratisBrukt(type) {
   return localStorage.getItem("minpris_free_" + type) === "1";
