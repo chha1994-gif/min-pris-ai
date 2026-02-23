@@ -747,6 +747,7 @@ async function checkProStatus() {
     const value = "; " + document.cookie;
     const parts = value.split("; " + name + "=");
     if (parts.length === 2) return parts.pop().split(";").shift();
+    return null;
   }
 
   let customerId = localStorage.getItem("stripeCustomerId");
@@ -765,23 +766,14 @@ async function checkProStatus() {
   if (customerId && !getCookie("stripeCustomerId")) {
     document.cookie =
       "stripeCustomerId=" + customerId +
-      "; path=/; max-age=31536000; Secure; SameSite=None";
+      "; path=/; max-age=31536000; Secure; SameSite=Lax";
 
     console.log("💾 → 🍪 LS synced back to cookie");
   }
 
-  const proFlagEarly =
-    localStorage.getItem("minpris_pro") ||
-    (document.cookie.includes("minpris_pro=1") ? "1" : null);
-
-if (proFlagEarly === "1") {
-    console.log("🟢 Early Pro restore (offline safe)");
-    document.body.classList.add("pro");
-}
-
   const proFlag = localStorage.getItem("minpris_pro");
 
-  // ✅ Fallback hvis vi mangler ID men LS sier Pro
+  // ✅ Fallback hvis LS sier Pro (offline / cache safe)
   if (proFlag === "1") {
     console.log("🟢 Pro fallback via minpris_pro");
     enableProUI();
@@ -789,8 +781,10 @@ if (proFlagEarly === "1") {
     return;
   }
 
+  // ❌ Ingen Stripe ID → disable Pro
   if (!customerId) {
     disableProUI();
+    oppdaterProUI();   // ✅ UI sync fix
     return;
   }
 
@@ -798,7 +792,7 @@ if (proFlagEarly === "1") {
     const res = await fetch("/api/check-pro", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customerId })   // ✅ KRITISK LINJE
+      body: JSON.stringify({ customerId })
     });
 
     const data = await res.json();
@@ -814,21 +808,23 @@ if (proFlagEarly === "1") {
     oppdaterProUI();   // ✅ KRITISK
 
   } catch (err) {
-  console.log("Offline – bruker lokal Pro-state");
 
-  const proFlag = localStorage.getItem("minpris_pro");
+    console.log("Offline – bruker lokal Pro-state");
 
-  if (proFlag === "1") {
-    enableProUI();
-  } else {
-    disableProUI();
+    if (proFlag === "1") {
+      enableProUI();
+    } else {
+      disableProUI();
+    }
+
+    oppdaterProUI();
   }
-
-  oppdaterProUI();
-}
 }
 
+// 🚀 Initial check
 checkProStatus();
+
+// 🔁 Refresh ved app-return / Stripe Portal
 window.addEventListener("focus", checkProStatus);
 </script>
 
