@@ -9,11 +9,11 @@ module.exports = async function handler(req, res) {
   try {
     const { customerId, email } = req.body;
 
-    console.log("📨 check-pro body:", req.body);
+    console.log("📨 check-pro:", { customerId, email });
 
     let resolvedCustomerId = customerId;
 
-    // ✅ Hvis email sendt → finn customer
+    // ✅ Email fallback → finn Stripe customer
     if (!resolvedCustomerId && email) {
       const customers = await stripe.customers.list({
         email,
@@ -38,8 +38,10 @@ module.exports = async function handler(req, res) {
       limit: 10,
     });
 
-    const isPro = subscriptions.data.some(
-      sub => sub.status === "active" || sub.status === "trialing"
+    const validStatuses = ["active", "trialing"];
+
+    const isPro = subscriptions.data.some(sub =>
+      validStatuses.includes(sub.status)
     );
 
     return res.status(200).json({
@@ -50,7 +52,7 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     console.error("❌ check-pro error:", err);
 
-    // KRITISK → aldri 500 til frontend
+    // ✅ KRITISK → aldri 500 til frontend
     return res.status(200).json({ pro: false });
   }
 };
