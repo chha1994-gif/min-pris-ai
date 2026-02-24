@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Logger inn...</title>
+</head>
+<body>
+  <h2>Logger inn…</h2>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get("email");
+
+    if (!email) {
+      document.body.innerHTML = "<h2>Ugyldig magic link</h2>";
+    } else {
+      // Lagre email
+      localStorage.setItem("restoreEmail", email);
+
+      // Sett Pro-status / hent fra backend
+      fetch("/api/check-pro?email=" + encodeURIComponent(email))
+        .then(r => r.json())
+        .then(data => {
+          if (data.pro) {
+            localStorage.setItem("minpris_pro", "true");
+          }
+
+          window.location.href = "/";
+        })
+        .catch(() => {
+          document.body.innerHTML = "<h2>Noe gikk galt</h2>";
+        });
+    }
+  </script>
+</body>
+</html>
