@@ -23,42 +23,72 @@ module.exports = async function handler(req, res) {
     );
 
   } catch (err) {
-    console.error("❌ Webhook signature verification failed:", err.message);
-    return res.status(400).send("Webhook Error: " + err.message);
+    console.error("❌ Signature verification failed:", err.message);
+    return res.status(400).send("Webhook Error");
   }
 
   try {
+    console.log("📨 Event:", event.type);
+
     switch (event.type) {
 
-      case "checkout.session.completed":
+      // ✅ Checkout fullført → aktiver Pro
+      case "checkout.session.completed": {
+        const session = await stripe.checkout.sessions.retrieve(
+          event.data.object.id,
+          { expand: ["customer", "customer_details"] }
+        );
+
+        const email =
+          session.customer_details?.email ||
+          session.customer?.email;
+
+        const customerId = session.customer?.id;
+
         console.log("✅ Checkout completed");
+        console.log("Customer:", customerId);
+        console.log("Email:", email);
 
-        const session = event.data.object;
+        if (email && customerId) {
+          await saveProUser(email, customerId);
+        }
 
-        console.log("Session ID:", session.id);
-        console.log("Customer:", session.customer);
-
-        // TODO: aktiver Pro / lagre i DB
         break;
+      }
 
-      case "customer.subscription.updated":
-        console.log("🔄 Subscription updated");
-        break;
+      // 🔄 Subscription oppdatert (valgfri logging)
+      case "customer.subscription.updated": {
+        const sub = event.data.object;
 
-      case "customer.subscription.deleted":
-        console.log("❌ Subscription cancelled");
+        console.log("🔄 Subscription updated:", {
+          customer: sub.customer,
+          status: sub.status,
+        });
+
         break;
+      }
+
+      // ❌ Subscription slettet → fjern Pro
+      case "customer.subscription.deleted": {
+        const sub = event.data.object;
+
+        console.log("❌ Subscription cancelled:", sub.customer);
+
+        await removeProByCustomerId(sub.customer);
+
+        break;
+      }
 
       default:
-        console.log("Unhandled event type:", event.type);
+        console.log("Unhandled event:", event.type);
     }
-
-    return res.status(200).json({ received: true });
 
   } catch (err) {
     console.error("❌ Webhook handler error:", err);
-    return res.status(500).send("Webhook handler failed");
   }
+
+  // ✅ ALLTID 200 til Stripe
+  return res.status(200).json({ received: true });
 };
 
 module.exports.config = {
@@ -66,3 +96,30 @@ module.exports.config = {
     bodyParser: false,
   },
 };
+
+
+// ------------------------------------------------------------------
+// ✅ MOCK STORAGE (BYTT TIL DB / KV SENERE)
+// ------------------------------------------------------------------
+
+const proUsers = {}; // midlertidig memory store
+
+async function saveProUser(email, customerId) {
+  console.log("🎯 Activating Pro for:", email);
+
+  proUsers[email] = {
+    customerId,
+    activatedAt: Date.now(),
+  };
+}
+
+async function removeProByCustomerId(customerId) {
+  console.log("🧹 Removing Pro for customer:", customerId);
+
+  for (const email in proUsers) {
+    if (proUsers[email].customerId === customerId) {
+      delete proUsers[email];
+      console.log("❌ Pro removed for:", email);
+    }
+  }
+}
