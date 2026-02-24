@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="no">
 <head>
+  <meta charset="UTF-8" />
   <title>Logger inn...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 </head>
 <body>
   <h2>Logger inn…</h2>
@@ -13,20 +15,35 @@
     if (!email) {
       document.body.innerHTML = "<h2>Ugyldig magic link</h2>";
     } else {
+      console.log("Magic login for:", email);
+
       // Lagre email
       localStorage.setItem("restoreEmail", email);
 
-      // Sett Pro-status / hent fra backend
+      // Sjekk Pro-status fra backend
       fetch("/api/check-pro?email=" + encodeURIComponent(email))
-        .then(r => r.json())
+        .then(r => {
+          if (!r.ok) throw new Error("API error");
+          return r.json();
+        })
         .then(data => {
-          if (data.pro) {
-            localStorage.setItem("minpris_pro", "true");
-          }
+          console.log("Check-pro response:", data);
 
+          const pro = data.pro ? "true" : "false";
+
+          // ✅ ALLTID oppdater status
+          localStorage.setItem("minpris_pro", pro);
+
+          // ✅ Cookie fallback (viktig for iOS/PWA/Safari)
+          document.cookie =
+            "minpris_pro=" + pro +
+            "; path=/; max-age=31536000; SameSite=Lax";
+
+          // Redirect hjem
           window.location.href = "/";
         })
-        .catch(() => {
+        .catch(err => {
+          console.error("Login error:", err);
           document.body.innerHTML = "<h2>Noe gikk galt</h2>";
         });
     }
