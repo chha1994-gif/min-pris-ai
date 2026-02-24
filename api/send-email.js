@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   try {
     await sgMail.send({
       to,
-      from: "MinPris <post@minpris.app>", // må være verified i SendGrid
+      from: "MinPris <kontakt@minpris.app>", // må være verified i SendGrid
       subject: subject || "MinPris",
       text: text || "",
       html: html || "",
