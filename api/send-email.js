@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
   try {
     await sgMail.send({
       to,
-      from: "MinPris <post@minpris.app>",
+      from: "MinPris <kontakt@minpris.app>",
       subject: subject || "MinPris",
       html: safeHtml,
     });
