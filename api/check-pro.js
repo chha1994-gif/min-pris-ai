@@ -46,9 +46,10 @@ module.exports = async function handler(req, res) {
 
     const validStatuses = ["active", "trialing"];
 
-    const isPro = subscriptions.data.some(sub =>
-      validStatuses.includes(sub.status)
-    );
+const isPro = subscriptions.data.some(sub =>
+  validStatuses.includes(sub.status) &&
+  !sub.cancel_at_period_end
+);
 
     return res.status(200).json({
       pro: isPro,
