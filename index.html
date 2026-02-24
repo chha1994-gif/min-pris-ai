@@ -337,7 +337,6 @@ function harPro() {
   window.restoreProByEmail = async function () {
 
   const email = prompt("Skriv inn e-posten din");
-
   if (!email) return;
 
   try {
@@ -352,7 +351,6 @@ function harPro() {
 
     if (data.customerId) {
 
-      // ✅ Lagre kun Stripe customerId
       localStorage.setItem("stripeCustomerId", data.customerId);
 
       document.cookie =
@@ -361,18 +359,33 @@ function harPro() {
 
       alert("✅ Konto funnet – oppdaterer status");
 
-      // ✅ La Stripe truth avgjøre Pro
       checkProStatus();
-
       return;
     }
 
-    alert("Fant ingen aktiv Pro funnet.");
+    // ✨ Ikke Pro → send magic link
+    await fetch("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: email,
+        subject: "Logg inn i MinPris",
+        html: `
+          <h2>MinPris</h2>
+          <p>Vi fant ingen aktiv Pro-konto.</p>
+          <p>Du kan logge inn her:</p>
+          <a href="https://minpris.app/login?email=${email}">
+            Åpne MinPris
+          </a>
+        `
+      })
+    });
+
+    alert("📨 Magic link sendt");
 
   } catch (err) {
-
     console.error(err);
-    alert("Noe gikk galt.");
+    alert("❌ Noe gikk galt");
   }
 };
   
