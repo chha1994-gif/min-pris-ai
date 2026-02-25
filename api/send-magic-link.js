@@ -17,7 +17,7 @@ module.exports = async function handler(req, res) {
 
     const token = crypto.randomUUID();
 
-    await kv.set(magic:${token}, email, { ex: 900 });
+    await kv.set(`magic:${token}`, email, { ex: 900 });
 
     const link = https://minpris.app/login.html?token=${token};
 
