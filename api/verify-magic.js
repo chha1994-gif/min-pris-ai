@@ -17,8 +17,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ valid: false });
     }
 
-    // ✅ Slett token etter bruk
-    await kv.del(magic:${token});
+    // await kv.del(magic:${token});
 
     console.log("✅ Token valid for:", email);
 
