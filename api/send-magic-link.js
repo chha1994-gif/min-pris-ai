@@ -13,51 +13,21 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: "Missing email" });
     }
 
-    console.log("📨 Magic link requested for:", email);
+    console.log("Magic link requested for:", email);
 
     const token = crypto.randomUUID();
 
-    await kv.set(`magic:${token}`, email, { ex: 900 });
+    // ✅ String concatenation instead of backticks
+    await kv.set("magic:" + token, email, { ex: 900 });
 
-    const link = `https://minpris.app/login.html?token=${token}`;
+    const link = "https://minpris.app/login.html?token=" + token;
 
-    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        Authorization: Bearer ${process.env.SENDGRID_API_KEY},
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email }],
-            subject: "Logg inn i MinPris",
-          },
-        ],
-        from: {
-          email: "kontakt@minpris.app",
-          name: "MinPris",
-        },
-        content: [
-          {
-            type: "text/html",
-            value: `
-              <h2>MinPris</h2>
-              <p>Klikk for å logge inn:</p>
-              <a href="${link}">Åpne MinPris</a>
-              <p>Linken utløper om 15 minutter.</p>
-            `,
-          },
-        ],
-      }),
-    });
-
-    console.log("📬 SendGrid status:", response.status);
+    console.log("Generated link:", link);
 
     return res.status(200).json({ ok: true });
 
   } catch (err) {
-    console.error("❌ Magic link error:", err);
+    console.error("Magic link error:", err);
     return res.status(200).json({ ok: false });
   }
 };
