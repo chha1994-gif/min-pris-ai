@@ -17,12 +17,44 @@ module.exports = async function handler(req, res) {
 
     const token = crypto.randomUUID();
 
-    // ✅ String concatenation instead of backticks
     await kv.set("magic:" + token, email, { ex: 900 });
 
     const link = "https://minpris.app/login.html?token=" + token;
 
     console.log("Generated link:", link);
+
+    // ✅ Send e-post via SendGrid
+    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + process.env.SENDGRID_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        personalizations: [
+          {
+            to: [{ email }],
+            subject: "Logg inn i MinPris",
+          },
+        ],
+        from: {
+          email: "kontakt@minpris.app",
+          name: "MinPris",
+        },
+        content: [
+          {
+            type: "text/html",
+            value:
+              "<h2>MinPris</h2>" +
+              "<p>Klikk for å logge inn:</p>" +
+              '<a href="' + link + '">Åpne MinPris</a>' +
+              "<p>Linken utløper om 15 minutter.</p>",
+          },
+        ],
+      }),
+    });
+
+    console.log("SendGrid status:", response.status);
 
     return res.status(200).json({ ok: true });
 
