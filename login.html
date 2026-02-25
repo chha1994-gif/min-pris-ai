@@ -3,49 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <title>Logger inn...</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 </head>
 <body>
   <h2>Logger inn…</h2>
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const email = params.get("email");
+    const token = params.get("token");
 
-    if (!email) {
+    if (!token) {
       document.body.innerHTML = "<h2>Ugyldig magic link</h2>";
     } else {
-      console.log("Magic login for:", email);
 
-      // Lagre email
-      localStorage.setItem("restoreEmail", email);
+      fetch("/api/verify-magic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.valid) {
+          document.body.innerHTML = "<h2>Magic link utløpt</h2>";
+          return;
+        }
 
-      // Sjekk Pro-status fra backend
-      fetch("/api/check-pro?email=" + encodeURIComponent(email))
-        .then(r => {
-          if (!r.ok) throw new Error("API error");
-          return r.json();
-        })
-        .then(data => {
-          console.log("Check-pro response:", data);
+        const email = data.email;
 
-          const pro = data.pro ? "true" : "false";
+        localStorage.setItem("restoreEmail", email);
 
-          // ✅ ALLTID oppdater status
-          localStorage.setItem("minpris_pro", pro);
+        fetch("/api/check-pro?email=" + encodeURIComponent(email))
+          .then(r => r.json())
+          .then(proData => {
+            const pro = proData.pro ? "true" : "false";
 
-          // ✅ Cookie fallback (viktig for iOS/PWA/Safari)
-          document.cookie =
-            "minpris_pro=" + pro +
-            "; path=/; max-age=31536000; SameSite=Lax";
+            localStorage.setItem("minpris_pro", pro);
 
-          // Redirect hjem
-          window.location.href = "/";
-        })
-        .catch(err => {
-          console.error("Login error:", err);
-          document.body.innerHTML = "<h2>Noe gikk galt</h2>";
-        });
+            document.cookie =
+              "minpris_pro=" + pro +
+              "; path=/; max-age=31536000; SameSite=Lax";
+
+            window.location.href = "/";
+          });
+      })
+      .catch(() => {
+        document.body.innerHTML = "<h2>Noe gikk galt</h2>";
+      });
     }
   </script>
 </body>
