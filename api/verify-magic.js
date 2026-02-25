@@ -1,4 +1,4 @@
-const { magicLinks } = require("./send-magic-link");
+const { kv } = require("@vercel/kv");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
@@ -8,27 +8,22 @@ module.exports = async function handler(req, res) {
   try {
     const { token } = req.body;
 
-    const record = magicLinks[token];
+    const email = await kv.get(magic_${token});
 
-    if (!record) {
-      return res.status(200).json({ valid: false });
-    }
-
-    if (Date.now() > record.expires) {
-      delete magicLinks[token];
+    if (!email) {
       return res.status(200).json({ valid: false });
     }
 
     // ✅ Engangsbruk
-    delete magicLinks[token];
+    await kv.del(magic_${token});
 
     return res.status(200).json({
       valid: true,
-      email: record.email,
+      email
     });
 
   } catch (err) {
-    console.error("❌ Verify magic error:", err);
+    console.error(err);
     return res.status(200).json({ valid: false });
   }
 };
