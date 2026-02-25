@@ -19,7 +19,7 @@ module.exports = async function handler(req, res) {
 
     await kv.set(`magic:${token}`, email, { ex: 900 });
 
-    const link = https://minpris.app/login.html?token=${token};
+    const link = `https://minpris.app/login.html?token=${token}`;
 
     const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
