@@ -8,18 +8,19 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ valid: false });
     }
 
-    console.log("🔑 Verifying token:", token);
+    console.log("Verifying token:", token);
 
-    const email = await kv.get(magic:${token});
+    const email = await kv.get(`magic:${token}`);
 
     if (!email) {
-      console.log("❌ Token invalid / expired");
+      console.log("Token invalid / expired");
       return res.status(200).json({ valid: false });
     }
 
-    // await kv.del(magic:${token});
+    // valgfritt:
+    // await kv.del(`magic:${token}`);
 
-    console.log("✅ Token valid for:", email);
+    console.log("Token valid for:", email);
 
     return res.status(200).json({
       valid: true,
@@ -27,7 +28,7 @@ module.exports = async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error("❌ Verify error:", err);
+    console.error("Verify error:", err);
     return res.status(200).json({ valid: false });
   }
 };
