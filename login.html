@@ -1,7 +1,6 @@
 <!DOCTYPE html>
-<html lang="no">
+<html>
 <head>
-  <meta charset="UTF-8" />
   <title>Logger inn...</title>
 </head>
 <body>
@@ -14,40 +13,31 @@
     if (!token) {
       document.body.innerHTML = "<h2>Ugyldig magic link</h2>";
     } else {
+      fetch("/api/verify-magic?token=" + token)
+        .then(r => r.json())
+        .then(data => {
+          if (!data.valid) {
+            document.body.innerHTML = "<h2>Linken er utløpt</h2>";
+            return;
+          }
 
-      fetch("/api/verify-magic", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token })
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (!data.valid) {
-          document.body.innerHTML = "<h2>Magic link utløpt</h2>";
-          return;
-        }
+          // ✅ Lagre login state
+          localStorage.setItem("restoreEmail", data.email);
 
-        const email = data.email;
+          // Hent Pro-status
+          fetch("/api/check-pro?email=" + encodeURIComponent(data.email))
+            .then(r => r.json())
+            .then(proData => {
+              if (proData.pro) {
+                localStorage.setItem("minpris_pro", "true");
+              }
 
-        localStorage.setItem("restoreEmail", email);
-
-        fetch("/api/check-pro?email=" + encodeURIComponent(email))
-          .then(r => r.json())
-          .then(proData => {
-            const pro = proData.pro ? "true" : "false";
-
-            localStorage.setItem("minpris_pro", pro);
-
-            document.cookie =
-              "minpris_pro=" + pro +
-              "; path=/; max-age=31536000; SameSite=Lax";
-
-            window.location.href = "/";
-          });
-      })
-      .catch(() => {
-        document.body.innerHTML = "<h2>Noe gikk galt</h2>";
-      });
+              window.location.href = "/";
+            });
+        })
+        .catch(() => {
+          document.body.innerHTML = "<h2>Noe gikk galt</h2>";
+        });
     }
   </script>
 </body>
