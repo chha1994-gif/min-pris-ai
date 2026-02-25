@@ -15,15 +15,12 @@ module.exports = async function handler(req, res) {
 
     console.log("📨 Magic link requested for:", email);
 
-    // ✅ Generer token
     const token = crypto.randomUUID();
 
-    // ✅ Lagre token → email (15 min expiry)
     await kv.set(magic:${token}, email, { ex: 900 });
 
     const link = https://minpris.app/login.html?token=${token};
 
-    // ✅ SendGrid request
     const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
       headers: {
@@ -38,7 +35,7 @@ module.exports = async function handler(req, res) {
           },
         ],
         from: {
-          email: "kontakt@minpris.app", // må være verifisert i SendGrid
+          email: "kontakt@minpris.app",
           name: "MinPris",
         },
         content: [
@@ -61,6 +58,6 @@ module.exports = async function handler(req, res) {
 
   } catch (err) {
     console.error("❌ Magic link error:", err);
-    return res.status(200).json({ ok: false }); // aldri 500 til frontend
+    return res.status(200).json({ ok: false });
   }
 };
