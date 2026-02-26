@@ -1,40 +1,55 @@
+const Stripe = require("stripe");
 const { kv } = require("@vercel/kv");
-const crypto = require("crypto");
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 module.exports = async function handler(req, res) {
   try {
-    const token = req.query.token;
+    const cookie = req.headers.cookie || "";
+    const match = cookie.match(/minpris_session=([^;]+)/);
 
-    if (!token) {
-      return res.status(400).json({ valid: false });
+    if (!match) {
+      return res.status(200).json({ pro: false });
     }
 
-    // 🔎 Finn email fra magic token
-    const email = await kv.get("magic:" + token);
+    const sessionId = match[1];
+
+    // 🔎 Finn email fra session
+    const email = await kv.get("session:" + sessionId);
 
     if (!email) {
-      return res.status(200).json({ valid: false });
+      return res.status(200).json({ pro: false });
     }
 
-    // 🔥 Engangsbruk – slett token
-    await kv.del("magic:" + token);
+    // 🔍 Stripe lookup
+    const customers = await stripe.customers.search({
+      query: 'email:"' + email + '"',
+    });
 
-    // 🔐 Opprett session
-    const sessionId = crypto.randomUUID();
+    if (!customers.data.length) {
+      return res.status(200).json({ pro: false });
+    }
 
-    // Lagre session i 7 dager
-    await kv.set("session:" + sessionId, email, { ex: 60 * 60 * 24 * 7 });
+    const validStatuses = ["active", "trialing"];
 
-    // 🍪 Sett HttpOnly cookie
-    res.setHeader("Set-Cookie",
-      "minpris_session=" + sessionId +
-      "; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=" + (60 * 60 * 24 * 7)
-    );
+    for (const customer of customers.data) {
+      const subs = await stripe.subscriptions.list({
+        customer: customer.id,
+        status: "all",
+      });
 
-    return res.status(200).json({ valid: true });
+      const hasActive = subs.data.some(sub =>
+        validStatuses.includes(sub.status)
+      );
+
+      if (hasActive) {
+        return res.status(200).json({ pro: true });
+      }
+    }
+
+    return res.status(200).json({ pro: false });
 
   } catch (err) {
-    console.error("verify-magic error:", err);
-    return res.status(500).json({ valid: false });
+    console.error("check-pro error:", err);
+    return res.status(200).json({ pro: false });
   }
 };
