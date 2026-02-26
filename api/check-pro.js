@@ -47,9 +47,9 @@ module.exports = async function handler(req, res) {
     if (email) {
       const normalizedEmail = email.trim().toLowerCase();
 
-      const customers = await stripe.customers.search({
-        query: email:"${normalizedEmail}",
-      });
+const customers = await stripe.customers.search({
+  query: 'email:"' + normalizedEmail + '"',
+});
 
       if (!customers.data.length) {
         console.log("❌ No customers found for email:", normalizedEmail);
