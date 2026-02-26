@@ -364,22 +364,12 @@ function harPro() {
     }
 
     // ✨ Ikke Pro → send magic link
-    await fetch("/api/send-email", {
+   await fetch("/api/send-magic", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    to: email,
-    subject: "Logg inn i MinPris",
-    html: `
-      <h2>MinPris</h2>
-      <p>Vi fant ingen aktiv Pro-konto.</p>
-      <p>Du kan logge inn her:</p>
-      <a href="https://minpris.app/login.html?email=${email}">
-        Åpne MinPris
-      </a>
-    `
-  })
+  body: JSON.stringify({ email })
 });
+
 
     alert("📨 Magic link sendt");
 
