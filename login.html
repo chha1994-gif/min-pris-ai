@@ -13,7 +13,7 @@
     if (!token) {
       document.body.innerHTML = "<h2>Ugyldig magic link</h2>";
     } else {
-      fetch("/api/verify-magic?token=" + token)
+      fetch("/api/verify-magic?token=" + encodeURIComponent(token.trim()))
         .then(r => r.json())
         .then(data => {
           if (!data.valid) {
