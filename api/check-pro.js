@@ -3,79 +3,65 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 module.exports = async function handler(req, res) {
   try {
-    let customerId, email;
+    var customerId;
+    var email;
 
-    // ✅ GET support
     if (req.method === "GET") {
       customerId = req.query.customerId;
       email = req.query.email;
     }
 
-    // ✅ POST support
     if (req.method === "POST") {
-      ({ customerId, email } = req.body);
+      customerId = req.body.customerId;
+      email = req.body.email;
     }
 
-    console.log("📨 check-pro request:", { customerId, email });
+    console.log("check-pro request:", customerId, email);
 
-    const validStatuses = ["active", "trialing"];
+    var validStatuses = ["active", "trialing"];
 
-    // 🔹 Hvis vi har customerId direkte
+    // 🔹 Hvis customerId finnes
     if (customerId) {
-      const subs = await stripe.subscriptions.list({
+      var subs = await stripe.subscriptions.list({
         customer: customerId,
         status: "all",
         limit: 10,
       });
 
-      console.log(
-        "📦 Subscriptions for customer:",
-        subs.data.map(s => ({ id: s.id, status: s.status }))
-      );
-
-      const isPro = subs.data.some(sub =>
-        validStatuses.includes(sub.status)
-      );
+      var isPro = subs.data.some(function (sub) {
+        return validStatuses.includes(sub.status);
+      });
 
       return res.status(200).json({
         pro: isPro,
-        customerId,
+        customerId: customerId,
       });
     }
 
-    // 🔹 Robust email search
+    // 🔹 Email fallback
     if (email) {
-      const normalizedEmail = email.trim().toLowerCase();
+      var normalizedEmail = email.trim().toLowerCase();
 
-const customers = await stripe.customers.search({
-  query: 'email:"' + normalizedEmail + '"',
-});
+      var customers = await stripe.customers.search({
+        query: 'email:"' + normalizedEmail + '"',
+      });
 
       if (!customers.data.length) {
-        console.log("❌ No customers found for email:", normalizedEmail);
         return res.status(200).json({ pro: false });
       }
 
-      console.log(
-        "👥 Found customers:",
-        customers.data.map(c => c.id)
-      );
+      for (var i = 0; i < customers.data.length; i++) {
+        var customer = customers.data[i];
 
-      for (const customer of customers.data) {
-        const subs = await stripe.subscriptions.list({
+        var subs = await stripe.subscriptions.list({
           customer: customer.id,
           status: "all",
           limit: 10,
         });
 
-        console.log(
-         📦 Subscriptions for ${customer.id}:`,
-          subs.data.map(s => ({ id: s.id, status: s.status }))
-        );
-
-        const hasActive = subs.data.some(sub =>
-          validStatuses.includes(sub.status)
-        );
+        var hasActive = subs.data.some(function (sub) {
+          return validStatuses.includes(sub.status);
+        });
 
         if (hasActive) {
           return res.status(200).json({
@@ -91,7 +77,7 @@ const customers = await stripe.customers.search({
     return res.status(200).json({ pro: false });
 
   } catch (err) {
-    console.error("❌ check-pro error:", err);
+    console.error("check-pro error:", err);
     return res.status(200).json({ pro: false });
   }
 };
