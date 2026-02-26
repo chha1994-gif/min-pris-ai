@@ -1,77 +1,49 @@
 const Stripe = require("stripe");
+const { kv } = require("@vercel/kv");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 module.exports = async function handler(req, res) {
   try {
-    var customerId;
-    var email;
+    const cookie = req.headers.cookie || "";
+    const match = cookie.match(/minpris_session=([^;]+)/);
 
-    if (req.method === "GET") {
-      customerId = req.query.customerId;
-      email = req.query.email;
-    }
-
-    if (req.method === "POST") {
-      customerId = req.body.customerId;
-      email = req.body.email;
-    }
-
-    console.log("check-pro request:", customerId, email);
-
-    var validStatuses = ["active", "trialing"];
-
-    // 🔹 Hvis customerId finnes
-    if (customerId) {
-      var subs = await stripe.subscriptions.list({
-        customer: customerId,
-        status: "all",
-        limit: 10,
-      });
-
-      var isPro = subs.data.some(function (sub) {
-        return validStatuses.includes(sub.status);
-      });
-
-      return res.status(200).json({
-        pro: isPro,
-        customerId: customerId,
-      });
-    }
-
-    // 🔹 Email fallback
-    if (email) {
-      var normalizedEmail = email.trim().toLowerCase();
-
-      var customers = await stripe.customers.search({
-        query: 'email:"' + normalizedEmail + '"',
-      });
-
-      if (!customers.data.length) {
-        return res.status(200).json({ pro: false });
-      }
-
-      for (var i = 0; i < customers.data.length; i++) {
-        var customer = customers.data[i];
-
-        var subs = await stripe.subscriptions.list({
-          customer: customer.id,
-          status: "all",
-          limit: 10,
-        });
-
-        var hasActive = subs.data.some(function (sub) {
-          return validStatuses.includes(sub.status);
-        });
-
-        if (hasActive) {
-          return res.status(200).json({
-            pro: true,
-            customerId: customer.id,
-          });
-        }
-      }
-
+    if (!match) {
       return res.status(200).json({ pro: false });
+    }
+
+    const sessionId = match[1];
+
+    // 🔎 Finn email fra session
+    const email = await kv.get("session:" + sessionId);
+
+    if (!email) {
+      return res.status(200).json({ pro: false });
+    }
+
+    // 🔍 Stripe lookup
+    const customers = await stripe.customers.search({
+      query: 'email:"' + email + '"',
+    });
+
+    if (!customers.data.length) {
+      return res.status(200).json({ pro: false });
+    }
+
+    const validStatuses = ["active", "trialing"];
+
+    for (const customer of customers.data) {
+      const subs = await stripe.subscriptions.list({
+        customer: customer.id,
+        status: "all",
+      });
+
+      const hasActive = subs.data.some(sub =>
+        validStatuses.includes(sub.status)
+      );
+
+      if (hasActive) {
+        return res.status(200).json({ pro: true });
+      }
     }
 
     return res.status(200).json({ pro: false });
