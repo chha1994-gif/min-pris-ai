@@ -5,13 +5,13 @@ module.exports = async function handler(req, res) {
   try {
     let customerId, email;
 
-    // GET support
+    // ✅ GET support
     if (req.method === "GET") {
       customerId = req.query.customerId;
       email = req.query.email;
     }
 
-    // POST support
+    // ✅ POST support
     if (req.method === "POST") {
       ({ customerId, email } = req.body);
     }
@@ -20,7 +20,7 @@ module.exports = async function handler(req, res) {
 
     const validStatuses = ["active", "trialing"];
 
-    // 🔹 Hvis vi allerede har customerId
+    // 🔹 Hvis vi har customerId direkte
     if (customerId) {
       const subs = await stripe.subscriptions.list({
         customer: customerId,
