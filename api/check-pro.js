@@ -5,13 +5,13 @@ module.exports = async function handler(req, res) {
   try {
     let customerId, email;
 
-    // ✅ GET support
+    // GET support
     if (req.method === "GET") {
       customerId = req.query.customerId;
       email = req.query.email;
     }
 
-    // ✅ POST support
+    // POST support
     if (req.method === "POST") {
       ({ customerId, email } = req.body);
     }
@@ -20,7 +20,7 @@ module.exports = async function handler(req, res) {
 
     const validStatuses = ["active", "trialing"];
 
-    // 🔥 Hvis vi har customerId direkte
+    // 🔹 Hvis vi allerede har customerId
     if (customerId) {
       const subs = await stripe.subscriptions.list({
         customer: customerId,
@@ -43,19 +43,23 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // 🔥 Email fallback (robust versjon)
+    // 🔹 Robust email search
     if (email) {
-      const customers = await stripe.customers.list({
-        email,
-        limit: 20,
+      const normalizedEmail = email.trim().toLowerCase();
+
+      const customers = await stripe.customers.search({
+        query: email:"${normalizedEmail}",
       });
 
       if (!customers.data.length) {
-        console.log("❌ No customers found for email");
+        console.log("❌ No customers found for email:", normalizedEmail);
         return res.status(200).json({ pro: false });
       }
 
-      console.log("👥 Found customers:", customers.data.map(c => c.id));
+      console.log(
+        "👥 Found customers:",
+        customers.data.map(c => c.id)
+      );
 
       for (const customer of customers.data) {
         const subs = await stripe.subscriptions.list({
@@ -84,7 +88,6 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ pro: false });
     }
 
-    // ❌ Ingen input
     return res.status(200).json({ pro: false });
 
   } catch (err) {
