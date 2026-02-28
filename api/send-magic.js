@@ -1,19 +1,22 @@
 const crypto = require("crypto");
 const { kv } = require("@vercel/kv");
+const sgMail = require("@sendgrid/mail");
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 module.exports = async function handler(req, res) {
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const { email } = req.body;
+
+    const email = req.body.email;
 
     if (!email) {
       return res.status(400).json({ error: "Missing email" });
     }
-
-    console.log("Magic link requested for:", email);
 
     const token = crypto.randomUUID();
 
@@ -21,45 +24,24 @@ module.exports = async function handler(req, res) {
 
     const link = "https://minpris.app/login.html?token=" + token;
 
-    console.log("Generated link:", link);
-
-    // ✅ Send e-post via SendGrid
-    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + process.env.SENDGRID_API_KEY,
-        "Content-Type": "application/json",
+    await sgMail.send({
+      to: email,
+      from: {
+        email: "kontakt@minpris.app",
+        name: "MinPris"
       },
-      body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email }],
-            subject: "Logg inn i MinPris",
-          },
-        ],
-        from: {
-          email: "kontakt@minpris.app",
-          name: "MinPris",
-        },
-        content: [
-          {
-            type: "text/html",
-            value:
-              "<h2>MinPris</h2>" +
-              "<p>Klikk for å logge inn:</p>" +
-              '<a href="' + link + '">Åpne MinPris</a>' +
-              "<p>Linken utløper om 15 minutter.</p>",
-          },
-        ],
-      }),
+      subject: "Logg inn i MinPris",
+      html:
+        "<h2>MinPris</h2>" +
+        "<p>Klikk for å logge inn:</p>" +
+        "<a href=\"" + link + "\">Åpne MinPris</a>" +
+        "<p>Linken utløper om 15 minutter.</p>"
     });
-
-    console.log("SendGrid status:", response.status);
 
     return res.status(200).json({ ok: true });
 
   } catch (err) {
-    console.error("Magic link error:", err);
-    return res.status(200).json({ ok: false });
+    console.error("Magic link error:", err.response?.body || err);
+    return res.status(500).json({ ok: false });
   }
 };
