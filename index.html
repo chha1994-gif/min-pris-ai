@@ -633,8 +633,11 @@ Totalt inkl. mva (25%): ${formatKr(totalInk)} kr`;
 }
 
 async function genererTilbud() {
-  if (!harPro()) {
-    if (gratisBrukt("ai")) return førStripe("ai");
+
+  if (!window.isPro) {
+    if (gratisBrukt("ai")) {
+      return forStripe("ai");
+    }
     merkGratisBrukt("ai");
   }
 
