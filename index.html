@@ -327,11 +327,13 @@ let stripeSource = null;
   });
 }
 
-async function checkProStatus() {
+window.isPro = false; // start alltid som gratis
 
+async function checkProStatus() {
   const customerId = localStorage.getItem("stripeCustomerId");
 
   if (!customerId) {
+    window.isPro = false;
     disableProUI();
     return;
   }
@@ -346,13 +348,16 @@ async function checkProStatus() {
     const data = await res.json();
 
     if (data.pro) {
+      window.isPro = true;
       enableProUI();
     } else {
+      window.isPro = false;
       disableProUI();
     }
 
   } catch (err) {
     console.error("checkProStatus error:", err);
+    window.isPro = false;
     disableProUI();
   }
 }
