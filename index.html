@@ -318,42 +318,35 @@ let stripeSource = null;
   });
 }
 
-function harPro() {
+async function checkProStatus() {
 
-  const hasLS = localStorage.getItem("minpris_pro") === "1"
-  const hasCookie =
-    document.cookie.includes("minpris_pro=1") ||
-    document.cookie.includes("minpris_pro=true")
+  const customerId = localStorage.getItem("stripeCustomerId");
 
-  // Sync cookie → LS (fortsatt smart)
-  if (!hasLS && hasCookie) {
-    localStorage.setItem("minpris_pro", "1")
-    return true
+  if (!customerId) {
+    disableProUI();
+    return;
   }
-
-  return hasLS || hasCookie
-}
-  
-  window.restoreProByEmail = async function () {
-
-  const email = prompt("Skriv inn e-posten din");
-  if (!email) return;
 
   try {
-
-    await fetch("/api/send-magic", {
+    const res = await fetch("/api/check-pro", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email })
+      body: JSON.stringify({ customerId })
     });
 
-    alert("📨 Magic link sendt");
+    const data = await res.json();
+
+    if (data.pro) {
+      enableProUI();
+    } else {
+      disableProUI();
+    }
 
   } catch (err) {
-    console.error(err);
-    alert("❌ Noe gikk galt");
+    console.error("checkProStatus error:", err);
+    disableProUI();
   }
-};
+}
   
 function gratisBrukt(type) {
   return localStorage.getItem("minpris_free_" + type) === "1";
@@ -361,17 +354,11 @@ function gratisBrukt(type) {
 function merkGratisBrukt(type) {
   localStorage.setItem("minpris_free_" + type, "1");
 }
- function hentStripeCustomerId() {
-  const match = document.cookie.match(/stripeCustomerId=([^;]+)/);
-  return match ? match[1] : null;
-}
+
 
 /* ✅ OPPDATERT */
 function oppdaterProUI(pro) {
 
-    if (pro === undefined) {
-        pro = harPro();   // ← KRITISK
-    }
   const cancelled = localStorage.getItem("minpris_cancelled") === "1";
   const periodEnd = localStorage.getItem("minpris_period_end");
 
