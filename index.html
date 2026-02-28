@@ -844,7 +844,7 @@ if ("serviceWorker" in navigator) {
 
   <script>
     async function openStripeLogin() {
-  const customerId = getStripeCustomerId()
+  const customerId = localStorage.getItem("stripeCustomerId")
 
   if (!customerId) {
     showMessage("Fant ingen aktiv Pro.")
@@ -883,12 +883,8 @@ if ("serviceWorker" in navigator) {
     btn.innerText = "💳 Administrer abonnement"
   }
 }
-window.addEventListener("load", () => {
-  if (!harPro()) {
-    const btn = document.getElementById("restoreBtn");
-    if (btn) btn.style.display = "block";
-  }
-});
+checkProStatus();
+window.addEventListener("focus", checkProStatus);
 </script>
   
 </body>
