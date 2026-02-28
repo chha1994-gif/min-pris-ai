@@ -354,51 +354,45 @@ function gratisBrukt(type) {
 function merkGratisBrukt(type) {
   localStorage.setItem("minpris_free_" + type, "1");
 }
+  
 
-
-/* ✅ OPPDATERT */
-function oppdaterProUI(pro) {
-
-  const cancelled = localStorage.getItem("minpris_cancelled") === "1";
-  const periodEnd = localStorage.getItem("minpris_period_end");
-
+  function enableProUI() {
   const badge = document.getElementById("proBadge");
-  const cancelBtn = document.getElementById("cancelBtn");
+  const restoreBtn = document.getElementById("restoreBtn");
   const reactivateBtn = document.getElementById("reactivateBtn");
-  const restoreBtn = document.getElementById("restoreProBtn");
-  const stripeLoginBtn = document.getElementById("stripeLoginBtn");
 
-  if (badge) badge.classList.toggle("hidden", !pro);
-  if (cancelBtn) cancelBtn.style.display = pro ? "block" : "none";
-  if (stripeLoginBtn) stripeLoginBtn.style.display = pro ? "block" : "none";
+  if (badge) {
+    badge.classList.remove("hidden");
+    badge.style.display = "inline-block";
+  }
 
-  if (badge && pro) {
-    if (cancelled && periodEnd) {
-      const dato = new Date(periodEnd * 1000).toLocaleDateString("no-NO");
-      badge.textContent = "Avsluttes " + dato;
-    } else {
-      badge.textContent = "Pro";
-    }
+  if (restoreBtn) {
+    restoreBtn.style.display = "none";
   }
 
   if (reactivateBtn) {
-    reactivateBtn.classList.toggle("hidden", !(pro && cancelled));
+    reactivateBtn.classList.add("hidden");
   }
-    if (restoreBtn) {
-  restoreBtn.style.display = "block";
-}
-  }
-  
-  function enableProUI() {
-  localStorage.setItem("minpris_pro", "1");
-  oppdaterProUI();
 }
 
 function disableProUI() {
-  localStorage.removeItem("minpris_pro");
-  oppdaterProUI();
-}
+  const badge = document.getElementById("proBadge");
+  const restoreBtn = document.getElementById("restoreBtn");
+  const reactivateBtn = document.getElementById("reactivateBtn");
 
+  if (badge) {
+    badge.classList.add("hidden");
+    badge.style.display = "none";
+  }
+
+  if (restoreBtn) {
+    restoreBtn.style.display = "block";
+  }
+
+  if (reactivateBtn) {
+    reactivateBtn.classList.add("hidden");
+  }
+}
 async function startStripeCheckout(source) {
   try {
     console.log("🚀 Calling /api/checkout...");
