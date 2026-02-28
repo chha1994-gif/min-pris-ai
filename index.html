@@ -545,10 +545,20 @@ function visEkstraPoster() {
 }
 
 async function beregnKm() {
-  if (!harPro()) {
-    if (gratisBrukt("km")) return førStripe("km");
-    merkGratisBrukt("km");
-  }
+  const resPro = await fetch("/api/check-pro", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    customerId: localStorage.getItem("stripeCustomerId")
+  })
+});
+
+const proData = await resPro.json();
+
+if (!proData.pro) {
+  alert("Pro kreves for km-beregning");
+  return;
+}
 
   if (!firmaadresse.value || !kundeadresse.value)
     return alert("Fyll inn begge adresser");
