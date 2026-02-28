@@ -342,10 +342,11 @@ function harPro() {
   try {
 
     const res = await fetch("/api/check-pro", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email })
-    });
+  method: "POST",
+  credentials: "include",   // 🔥 KRITISK
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ customerId })
+});
 
     const data = await res.json();
 
