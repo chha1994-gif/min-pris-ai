@@ -3,7 +3,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 module.exports = async function handler(req, res) {
   try {
-    const { customerId } = req.body;
+    const customerId = req.cookies.stripeCustomerId;
 
     if (!customerId) {
       return res.status(200).json({ pro: false });
