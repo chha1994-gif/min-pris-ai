@@ -408,8 +408,12 @@ function disableProUI() {
     reactivateBtn.classList.add("hidden");
   }
 }
+let stripeSource = null;
+
 function forStripe(type) {
-  startStripeCheckout(type);
+  stripeSource = type;
+  document.getElementById("stripeModal")
+    .classList.remove("hidden");
 }
 
 async function startStripeCheckout(source) {
@@ -902,10 +906,48 @@ if ("serviceWorker" in navigator) {
   }
 }
     
+let stripeSource = null;
 
-checkProStatus();
-window.addEventListener("focus", checkProStatus);
+  function forStripe(type) {
+    stripeSource = type;
+    document.getElementById("stripeModal")
+      .classList.remove("hidden");
+  }
+
+  function fortsettStripe() {
+    startStripeCheckout(stripeSource);
+  }
+
+  function lukkStripeModal() {
+    document.getElementById("stripeModal")
+      .classList.add("hidden");
+  }
+
+  checkProStatus();
+  window.addEventListener("focus", checkProStatus);
 </script>
+
+  <div id="stripeModal" class="modal hidden">
+  <div class="modal-card">
+    <h3>MinPris Pro</h3>
+
+    <p class="sub">
+      Fortsett uten begrensninger ✨
+    </p>
+
+    <p class="desc">
+      Pro (49 kr/md) gir ubegrenset km-beregning og AI-tilbud.
+    </p>
+
+    <button class="pro-btn" onclick="fortsettStripe()">
+      🚀 Oppgrader til Pro
+    </button>
+
+    <button class="ghost-btn" onclick="lukkStripeModal()">
+      Ikke nå
+    </button>
+  </div>
+</div>
 
 
 </body>
