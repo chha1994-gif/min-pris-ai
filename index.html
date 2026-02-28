@@ -900,6 +900,33 @@ if ("serviceWorker" in navigator) {
     btn.innerText = "💳 Administrer abonnement"
   }
 }
+    
+async function gjenopprett() {
+  const email = prompt("Skriv inn e-posten du brukte ved kjøp:");
+
+  if (!email) return;
+
+  try {
+    const res = await fetch("/api/restore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("Abonnement gjenopprettet.");
+      location.reload();
+    } else {
+      alert(data.error || "Kunne ikke gjenopprette.");
+    }
+
+  } catch (err) {
+    alert("Teknisk feil.");
+  }
+}
+
 checkProStatus();
 window.addEventListener("focus", checkProStatus);
 </script>
