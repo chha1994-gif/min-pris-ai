@@ -717,11 +717,11 @@ async function gjenopptaAbonnement() {
     const data = await res.json();
 
     if (data.success) {
-      localStorage.setItem("minpris_cancelled", "0");
-      localStorage.removeItem("minpris_period_end");
-      oppdaterProUI();
-      alert("Abonnement gjenopptatt 👍");
-    } else {
+    localStorage.setItem("minpris_cancelled", "0");
+    localStorage.removeItem("minpris_period_end");
+    enableProUI();
+    alert("Abonnement gjenopptatt 👍");
+} else {
       alert("Kunne ikke gjenoppta abonnement");
     }
 
@@ -769,16 +769,14 @@ async function checkProStatus() {
   if (proFlag === "1") {
     console.log("🟢 Pro fallback via minpris_pro");
     enableProUI();
-    oppdaterProUI();
     return;
-  }
+}
 
   // ❌ Ingen Stripe ID → disable Pro
-  if (!customerId) {
+ f (!customerId) {
     disableProUI();
-    oppdaterProUI();   // ✅ UI sync fix
     return;
-  }
+}
 
   try {
     const res = await fetch("/api/check-pro", {
@@ -796,8 +794,7 @@ async function checkProStatus() {
     } else {
       disableProUI();
     }
-
-    oppdaterProUI();   // ✅ KRITISK
+    
 
   } catch (err) {
 
@@ -809,7 +806,6 @@ async function checkProStatus() {
       disableProUI();
     }
 
-    oppdaterProUI();
   }
 }
 
