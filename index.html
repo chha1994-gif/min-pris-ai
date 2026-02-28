@@ -554,26 +554,32 @@ function visEkstraPoster() {
 }
 
 async function beregnKm() {
-  
-if (!window.isPro) {
-  if (gratisBrukt("km")) {
-    return forStripe("km");
-  }
-  merkGratisBrukt("km");
-}
 
-  if (!firmaadresse.value || !kundeadresse.value)
+  if (!window.isPro) {
+    if (gratisBrukt("km")) {
+      return forStripe("km");
+    }
+    merkGratisBrukt("km");
+  }
+
+  if (!firmaadresse.value || !kundeadresse.value) {
     return alert("Fyll inn begge adresser");
+  }
 
   const res = await fetch("/api/route", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ start:firmaadresse.value, end:kundeadresse.value })
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      start: firmaadresse.value,
+      end: kundeadresse.value
+    })
   });
 
   const data = await res.json();
+
   let km = data.km;
   if (turRetur.checked) km *= 2;
+
   kmPerDag.value = km.toFixed(1);
 }
 
