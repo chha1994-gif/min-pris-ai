@@ -163,15 +163,16 @@
   text-align: center;
 }
 
-    #proBadge {
-  display: table;
-  margin: 0 auto 16px auto;
+#proBadge {
+  display: inline-block;
+  margin-left: 10px;
   font-weight: 600;
   background: #16a34a;
   color: white;
-  padding: 6px 14px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 12px;
+  vertical-align: middle;
 }
     
   </style>
@@ -186,8 +187,10 @@
 <div class="box">
 
 <div class="title-wrapper">
-  <h1 class="title">MinPris – tilbudskalkulator</h1>
-  <div id="proBadge" class="hidden">Pro</div>
+  <h1 class="title">
+    MinPris – tilbudskalkulator
+    <span id="proBadge" class="hidden">Pro</span>
+  </h1>
 </div>
 
 <label>Arbeidsbeskrivelse</label>
