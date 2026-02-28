@@ -341,40 +341,11 @@ function harPro() {
 
   try {
 
-    const res = await fetch("/api/check-pro", {
-  method: "POST",
-  credentials: "include",   // 🔥 LEGG TIL DENNE
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email })
-});
-
-console.log("Status:", res.status);
-const text = await res.text();
-console.log("Response text:", text);
-
-    const data = await res.json();
-
-    if (data.customerId) {
-
-      localStorage.setItem("stripeCustomerId", data.customerId);
-
-      document.cookie =
-        "stripeCustomerId=" + data.customerId +
-        "; path=/; max-age=31536000; Secure; SameSite=Lax";
-
-      alert("✅ Konto funnet – oppdaterer status");
-
-      checkProStatus();
-      return;
-    }
-
-    // ✨ Ikke Pro → send magic link
-   await fetch("/api/send-magic", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email })
-});
-
+    await fetch("/api/send-magic", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email })
+    });
 
     alert("📨 Magic link sendt");
 
