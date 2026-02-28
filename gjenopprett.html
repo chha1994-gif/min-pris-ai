@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gjenopprett abonnement – MinPris</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f8f8f8;
+      padding: 40px;
+      max-width: 500px;
+      margin: auto;
+    }
+    h1 { font-size: 22px; }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 12px 16px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .note {
+      font-size: 13px;
+      opacity: 0.6;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Gjenopprett abonnement</h1>
+
+<p>Skriv inn e-posten du brukte ved kjøp.</p>
+
+<input type="email" id="email" placeholder="din@epost.no" />
+<button onclick="gjenopprett()">Gjenopprett</button>
+
+<p class="note">
+Av sikkerhetsgrunner kan gjenoppretting kun brukes én gang per 30 dager.
+</p>
+
+<script>
+async function gjenopprett() {
+  const email = document.getElementById("email").value;
+  if (!email) return alert("Skriv inn e-post.");
+
+  try {
+    const res = await fetch("/api/restore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("Abonnement gjenopprettet.");
+      window.location.href = "/";
+    } else {
+      alert(data.error || "Kunne ikke gjenopprette.");
+    }
+  } catch {
+    alert("Teknisk feil.");
+  }
+}
+</script>
+
+</body>
+</html>
