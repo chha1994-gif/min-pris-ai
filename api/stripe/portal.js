@@ -1,4 +1,5 @@
 const Stripe = require("stripe");
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 module.exports = async function handler(req, res) {
@@ -7,13 +8,24 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const customerId =
-      req.cookies.stripeCustomerId || req.body.customerId;
+    // 1️⃣ Kun les customerId fra HttpOnly cookie
+    const customerId = req.cookies.stripeCustomerId;
 
     if (!customerId) {
-      return res.status(400).json({ error: "Missing customerId" });
+      return res.status(401).json({ error: "Not authenticated" });
     }
 
+    // 2️⃣ Verifiser at abonnement finnes (ekstra sikkerhet)
+    const subs = await stripe.subscriptions.list({
+      customer: customerId,
+      limit: 1,
+    });
+
+    if (!subs.data.length) {
+      return res.status(403).json({ error: "No subscription found" });
+    }
+
+    // 3️⃣ Lag Stripe Portal session
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: "https://minpris.app"
@@ -23,8 +35,6 @@ module.exports = async function handler(req, res) {
 
   } catch (err) {
     console.error("Stripe portal error:", err);
-    return res.status(500).json({
-      error: err.message || "Portal failed"
-    });
+    return res.status(500).json({ error: "Portal failed" });
   }
 };
