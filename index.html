@@ -408,18 +408,18 @@ function disableProUI() {
     reactivateBtn.classList.add("hidden");
   }
 }
+function forStripe(type) {
+  startStripeCheckout(type);
+}
+
 async function startStripeCheckout(source) {
   try {
     console.log("🚀 Calling /api/checkout...");
-
     const res = await fetch("/api/checkout", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ source })
     });
-
     if (!res.ok) {
       const text = await res.text();
       console.error("❌ Checkout HTTP error:", res.status, text);
