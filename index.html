@@ -449,18 +449,6 @@ async function startStripeCheckout(source) {
   }
 }
 
-function førStripe(source) {
-  stripeSource = source;
-  stripeModal.classList.remove("hidden");
-}
-function lukkStripeModal() {
-  stripeModal.classList.add("hidden");
-  stripeSource = null;
-}
-function fortsettStripe() {
-  if (!stripeSource) return;
-  startStripeCheckout(stripeSource);
-}
 
 const params = new URLSearchParams(location.search);
 
