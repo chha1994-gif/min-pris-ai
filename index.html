@@ -367,6 +367,7 @@ function merkGratisBrukt(type) {
   const badge = document.getElementById("proBadge");
   const restoreBtn = document.getElementById("restoreBtn");
   const reactivateBtn = document.getElementById("reactivateBtn");
+  const manageBtn = document.getElementById("manageSubscriptionBtn");
 
   if (badge) {
     badge.classList.remove("hidden");
@@ -380,12 +381,16 @@ function merkGratisBrukt(type) {
   if (reactivateBtn) {
     reactivateBtn.classList.add("hidden");
   }
+    if (manageBtn) {
+  manageBtn.style.display = "block";
+}
 }
 
 function disableProUI() {
   const badge = document.getElementById("proBadge");
   const restoreBtn = document.getElementById("restoreBtn");
   const reactivateBtn = document.getElementById("reactivateBtn");
+  const manageBtn = document.getElementById("manageSubscriptionBtn");
 
   if (badge) {
     badge.classList.add("hidden");
@@ -399,6 +404,9 @@ function disableProUI() {
   if (reactivateBtn) {
     reactivateBtn.classList.add("hidden");
   }
+  if (manageBtn) {
+  manageBtn.style.display = "none";
+}
 }
 
 function forStripe(type) {
