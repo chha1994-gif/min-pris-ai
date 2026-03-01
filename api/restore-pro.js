@@ -37,9 +37,9 @@ module.exports = async function handler(req, res) {
 
     if (pro) {
       res.setHeader(
-        "Set-Cookie",
-        stripeCustomerId=${customerId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=31536000
-      );
+  "Set-Cookie",
+  "stripeCustomerId=" + customerId + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=31536000"
+);
     }
 
     return res.status(200).json({
