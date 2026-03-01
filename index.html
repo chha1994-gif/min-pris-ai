@@ -253,10 +253,10 @@
 <button class="dark" onclick="beregn()">Beregn</button>
 <button class="blue" id="aiBtn" onclick="genererTilbud()" disabled>Generer tilbudstekst</button>
 
-<button type="button" id="cancelBtn" class="gray" onclick="åpnePortal()">
-  Administrer abonnement
+<button id="adminBtn" style="display:none" onclick="openCustomerPortal()">
+  💳 Administrer abonnement
 </button>
-
+  
 <!-- ✅ NY -->
 <button type="button" id="reactivateBtn" class="blue hidden" onclick="gjenopptaAbonnement()">
   Gjenoppta abonnement
@@ -738,7 +738,6 @@ async function checkProStatus() {
   // ✅ Cookie → LS sync
   if (!customerId) {
     customerId = getCookie("stripeCustomerId");
-
     if (customerId) {
       localStorage.setItem("stripeCustomerId", customerId);
       console.log("🍪 → 💾 Cookie synced to LS");
@@ -750,24 +749,23 @@ async function checkProStatus() {
     document.cookie =
       "stripeCustomerId=" + customerId +
       "; path=/; max-age=31536000; Secure; SameSite=Lax";
-
     console.log("💾 → 🍪 LS synced back to cookie");
   }
 
   const proFlag = localStorage.getItem("minpris_pro");
 
-  // ✅ Fallback hvis LS sier Pro (offline / cache safe)
+  // ✅ Offline fallback (cache safe)
   if (proFlag === "1") {
     console.log("🟢 Pro fallback via minpris_pro");
     enableProUI();
     return;
-}
+  }
 
-  // ❌ Ingen Stripe ID → disable Pro
- f (!customerId) {
+  // ❌ Ingen Stripe ID → gratis
+  if (!customerId) {
     disableProUI();
     return;
-}
+  }
 
   try {
     const res = await fetch("/api/check-pro", {
@@ -777,26 +775,24 @@ async function checkProStatus() {
     });
 
     const data = await res.json();
-
     console.log("🔎 check-pro response:", data);
 
     if (data.pro) {
       enableProUI();
+      localStorage.setItem("minpris_pro", "1");
     } else {
       disableProUI();
+      localStorage.removeItem("minpris_pro");
     }
-    
 
   } catch (err) {
-
-    console.log("Offline – bruker lokal Pro-state");
+    console.log("⚠️ Offline - bruker lokal Pro-state");
 
     if (proFlag === "1") {
       enableProUI();
     } else {
       disableProUI();
     }
-
   }
 }
 
