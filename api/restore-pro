@@ -1,6 +1,8 @@
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2023-10-16",
+});
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -14,6 +16,9 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log("🔄 Restore attempt for session:", sessionId);
+
+    // 1️⃣ Hent Checkout Session
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (!session || !session.customer) {
@@ -22,6 +27,7 @@ export default async function handler(req, res) {
 
     const customerId = session.customer;
 
+    // 2️⃣ Sjekk aktiv subscription
     const subs = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
@@ -30,22 +36,23 @@ export default async function handler(req, res) {
 
     const pro = subs.data.length > 0;
 
-    // Sett cookie hvis pro
+    console.log("🔎 Pro status:", pro, "Customer:", customerId);
+
     if (pro) {
+      // 🔥 HttpOnly cookie (sikker server-side auth)
       res.setHeader(
         "Set-Cookie",
-        stripeCustomerId=${customerId}; Path=/; HttpOnly; Secure; SameSite=Lax
+        stripeCustomerId=${customerId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=31536000
       );
     }
 
-    // 🚀 VIKTIG: Returner customerId også
     return res.status(200).json({
       pro,
       customerId
     });
 
   } catch (err) {
-    console.error("Restore error:", err);
+    console.error("❌ Restore error:", err);
     return res.status(500).json({ error: "Server error" });
   }
 }
