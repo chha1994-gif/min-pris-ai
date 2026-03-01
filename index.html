@@ -410,11 +410,16 @@ function forStripe(type) {
 async function startStripeCheckout(source) {
   try {
     console.log("🚀 Calling /api/checkout...");
+
     const res = await fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source })
+      body: JSON.stringify({
+        source,
+        customerId: localStorage.getItem("stripeCustomerId") || null
+      })
     });
+
     if (!res.ok) {
       const text = await res.text();
       console.error("❌ Checkout HTTP error:", res.status, text);
@@ -430,16 +435,13 @@ async function startStripeCheckout(source) {
       return;
     }
 
-    console.log("✅ Redirecting to Stripe:", data.url);
-
     window.location.href = data.url;
 
   } catch (err) {
-    console.error("💥 Checkout crash:", err);
-    alert("Noe gikk galt med betaling");
+    console.error("❌ Checkout error:", err);
+    alert("Noe gikk galt");
   }
 }
-
 
 const params = new URLSearchParams(location.search);
 
