@@ -14,7 +14,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1️⃣ Hent checkout-session fra Stripe
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (!session || !session.customer) {
@@ -23,7 +22,6 @@ export default async function handler(req, res) {
 
     const customerId = session.customer;
 
-    // 2️⃣ Sjekk om abonnement er aktivt
     const subs = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
@@ -32,7 +30,7 @@ export default async function handler(req, res) {
 
     const pro = subs.data.length > 0;
 
-    // 3️⃣ Hvis Pro → sett HttpOnly cookie
+    // Sett cookie hvis pro
     if (pro) {
       res.setHeader(
         "Set-Cookie",
@@ -40,8 +38,11 @@ export default async function handler(req, res) {
       );
     }
 
-    // 4️⃣ Returner kun pro-status
-    return res.status(200).json({ pro });
+    // 🚀 VIKTIG: Returner customerId også
+    return res.status(200).json({
+      pro,
+      customerId
+    });
 
   } catch (err) {
     console.error("Restore error:", err);
