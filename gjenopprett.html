@@ -68,9 +68,14 @@ async function gjenopprett() {
     const data = await res.json();
 
     if (res.ok) {
-      alert("Abonnement gjenopprettet.");
-      window.location.href = "/";
-    } else {
+  // 🔥 Lagre customerId før redirect
+  localStorage.setItem("stripeCustomerId", data.customerId);
+  document.cookie =
+    "stripeCustomerId=" + data.customerId + "; path=/; max-age=31536000";
+
+  alert("Abonnement gjenopprettet.");
+  window.location.href = "/";
+} else {
       alert(data.error || "Kunne ikke gjenopprette.");
     }
   } catch {
