@@ -8,32 +8,40 @@
   <p>Aktiverer Pro...</p>
 
 <script>
-const params = new URLSearchParams(window.location.search);
-const sessionId = params.get("session_id");
+(async function () {
+  const params = new URLSearchParams(window.location.search);
+  const sessionId = params.get("session_id");
 
-if (sessionId && !sessionStorage.getItem("restore_attempted")) {
-  sessionStorage.setItem("restore_attempted", "true");
+  if (!sessionId) {
+    window.location.href = "/";
+    return;
+  }
 
-  fetch("/api/restore-pro", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessionId })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.pro) {
-      document.cookie = "minpris_pro=true; path=/; max-age=31536000";
-      localStorage.setItem("minpris_pro", "true");
+  try {
+    const res = await fetch("/api/restore-pro", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId })
+    });
+
+    const data = await res.json();
+
+    if (data.customerId) {
+      // Lagre customer
       localStorage.setItem("stripeCustomerId", data.customerId);
+
+      // Midlertidig fallback
+      localStorage.setItem("minpris_pro", "1");
+
+      document.cookie =
+        "stripeCustomerId=" + data.customerId +
+        "; path=/; max-age=31536000; Secure; SameSite=Lax";
     }
 
-    window.location.href = "/";
-  })
-  .catch(() => {
-    window.location.href = "/";
-  });
-}
-</script>
+  } catch (err) {
+    console.error("Restore error:", err);
+  }
 
-</body>
-</html>
+  window.location.href = "/";
+})();
+</script>
