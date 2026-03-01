@@ -20,28 +20,29 @@ module.exports = async function handler(req, res) {
       throw new Error("Missing STRIPE_PRICE_ID");
     }
 
-    const { source } = req.body;
+    const { source, customerId } = req.body;
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
+const session = await stripe.checkout.sessions.create({
+  mode: "subscription",
 
-      success_url: "https://minpris.app/success.html?session_id={CHECKOUT_SESSION_ID}",
-      cancel_url: "https://minpris.app/cancel.html",
+  customer: customerId || undefined, // 🔥 viktig
 
-      payment_method_types: ["card"],
+  success_url: "https://minpris.app/success.html?session_id={CHECKOUT_SESSION_ID}",
+  cancel_url: "https://minpris.app/cancel.html",
 
-      line_items: [
-        {
-          price: process.env.STRIPE_PRICE_ID,
-          quantity: 1,
-        },
-      ],
+  payment_method_types: ["card"],
 
-      metadata: {
-        source: source || "unknown",
-      },
-    });
+  line_items: [
+    {
+      price: process.env.STRIPE_PRICE_ID,
+      quantity: 1,
+    },
+  ],
 
+  metadata: {
+    source: source || "unknown",
+  },
+});
     console.log("✅ Session created:", session.id);
 
     return res.status(200).json({ url: session.url });
