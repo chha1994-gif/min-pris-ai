@@ -4,68 +4,79 @@ const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 module.exports = async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
   try {
     const { email } = req.body;
+
     if (!email) {
       return res.status(400).json({ error: "Missing email" });
     }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const now = Date.now();
 
     const ip =
       req.headers["x-forwarded-for"] ||
       req.socket?.remoteAddress ||
       "unknown";
 
-    const now = Date.now();
-    const key = "restore:" + email.toLowerCase();
-
-    // 🔎 Sjekk om brukt siste 30 dager
-    const lastRestore = await kv.get(key);
-
-    if (lastRestore && now - lastRestore < 30 * 24 * 60 * 60 * 1000) {
-      return res.status(429).json({
-        error: "Gjenoppretting kan kun brukes én gang per 30 dager."
-      });
-    }
-
-    // 🔍 Sjekk Stripe for aktivt abonnement
+    // 1️⃣ Finn Stripe customer først
     const customers = await stripe.customers.search({
-      query: 'email:"' + email + '"'
+      query: email:"${normalizedEmail}"
     });
 
     if (!customers.data.length) {
       return res.status(404).json({ error: "Fant ingen aktiv konto." });
     }
 
-    const validStatuses = ["active", "trialing"];
-    let hasActive = false;
+    const customer = customers.data[0];
+    const customerId = customer.id;
 
-    for (const customer of customers.data) {
-      const subs = await stripe.subscriptions.list({
-        customer: customer.id,
-        status: "all"
+    // 2️⃣ Bruk customerId som restore-key (ikke email)
+    const key = "restore_" + customerId;
+
+    // 3️⃣ Sjekk om restore brukt siste 30 dager
+    const lastRestore = await kv.get(key);
+
+    const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+
+    if (lastRestore && now - lastRestore < THIRTY_DAYS) {
+      return res.status(429).json({
+        error: "Gjenoppretting kan kun brukes én gang per 30 dager."
       });
-
-      if (subs.data.some(sub => validStatuses.includes(sub.status))) {
-        hasActive = true;
-        break;
-      }
     }
+
+    // 4️⃣ Sjekk aktivt abonnement
+    const subs = await stripe.subscriptions.list({
+      customer: customerId,
+      status: "all",
+      limit: 5
+    });
+
+    const validStatuses = ["active", "trialing"];
+
+    const hasActive = subs.data.some(sub =>
+      validStatuses.includes(sub.status)
+    );
 
     if (!hasActive) {
-      return res.status(404).json({ error: "Ingen aktivt abonnement funnet." });
+      return res.status(403).json({
+        error: "Ingen aktivt abonnement funnet."
+      });
     }
 
-    // ✅ Logg restore
-    await kv.set(key, now);
+    // 5️⃣ Lagre restore timestamp (30 dager TTL)
+    await kv.set(key, now, {
+      ex: 60 * 60 * 24 * 30 // 30 dager
+    });
 
+    // 6️⃣ Logg restore (90 dager TTL)
     await kv.set("restore_log:" + now, {
-      email,
+      customerId,
+      email: normalizedEmail,
       ip,
       timestamp: now
+    }, {
+      ex: 60 * 60 * 24 * 90 // 90 dager
     });
 
     return res.status(200).json({ success: true });
