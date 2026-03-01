@@ -36,10 +36,10 @@ module.exports = async function handler(req, res) {
     const pro = subs.data.length > 0;
 
     if (pro) {
-      res.setHeader(
-  "Set-Cookie",
-  "stripeCustomerId=" + customerId + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=31536000"
-);
+  res.setHeader(
+    "Set-Cookie",
+    "stripeCustomerId=" + customerId + "; Path=/; Secure; SameSite=None; Max-Age=31536000"
+  );
     }
 
     return res.status(200).json({
