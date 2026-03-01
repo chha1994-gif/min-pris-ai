@@ -19,7 +19,13 @@ module.exports = async function handler(req, res) {
       req.socket?.remoteAddress ||
       "unknown";
 
-    // 1️⃣ Finn Stripe customer først
+    // 🔧 JUSTER DISSE TO
+    const MAX_RESTORES = 1; // ← Endre denne senere hvis du vil
+    const WINDOW_DAYS = 30;
+
+    const WINDOW_MS = WINDOW_DAYS * 24 * 60 * 60 * 1000;
+
+    // 1️⃣ Finn Stripe customer
     const customers = await stripe.customers.search({
       query: email:"${normalizedEmail}"
     });
@@ -31,17 +37,18 @@ module.exports = async function handler(req, res) {
     const customer = customers.data[0];
     const customerId = customer.id;
 
-    // 2️⃣ Bruk customerId som restore-key (ikke email)
-    const key = "restore_" + customerId;
+    const key = "restore_usage_" + customerId;
 
-    // 3️⃣ Sjekk om restore brukt siste 30 dager
-    const lastRestore = await kv.get(key);
+    // 2️⃣ Hent eksisterende restore-historikk
+    let usage = await kv.get(key);
+    usage = usage || [];
 
-    const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+    // 3️⃣ Fjern restores eldre enn WINDOW
+    usage = usage.filter(ts => now - ts < WINDOW_MS);
 
-    if (lastRestore && now - lastRestore < THIRTY_DAYS) {
+    if (usage.length >= MAX_RESTORES) {
       return res.status(429).json({
-        error: "Gjenoppretting kan kun brukes én gang per 30 dager."
+        error: Gjenoppretting kan kun brukes ${MAX_RESTORES} ganger per ${WINDOW_DAYS} dager.
       });
     }
 
@@ -64,19 +71,21 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // 5️⃣ Lagre restore timestamp (30 dager TTL)
-    await kv.set(key, now, {
-      ex: 60 * 60 * 24 * 30 // 30 dager
+    // 5️⃣ Registrer nytt restore
+    usage.push(now);
+
+    await kv.set(key, usage, {
+      ex: 60 * 60 * 24 * WINDOW_DAYS
     });
 
-    // 6️⃣ Logg restore (90 dager TTL)
+    // 6️⃣ Logg restore (90 dager)
     await kv.set("restore_log:" + now, {
       customerId,
       email: normalizedEmail,
       ip,
       timestamp: now
     }, {
-      ex: 60 * 60 * 24 * 90 // 90 dager
+      ex: 60 * 60 * 24 * 90
     });
 
     return res.status(200).json({ success: true });
