@@ -19,15 +19,15 @@ module.exports = async function handler(req, res) {
       req.socket?.remoteAddress ||
       "unknown";
 
-    // 🔧 JUSTER DISSE TO
-    const MAX_RESTORES = 1; // ← Endre denne senere hvis du vil
+    // 🔧 Juster disse hvis du vil endre regler
+    const MAX_RESTORES = 2;
     const WINDOW_DAYS = 30;
 
     const WINDOW_MS = WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
-    // 1️⃣ Finn Stripe customer
+    // 1️⃣ Finn Stripe customer (UTEN backticks)
     const customers = await stripe.customers.search({
-      query: email:"${normalizedEmail}"
+      query: 'email:"' + normalizedEmail + '"'
     });
 
     if (!customers.data.length) {
@@ -39,16 +39,23 @@ module.exports = async function handler(req, res) {
 
     const key = "restore_usage_" + customerId;
 
-    // 2️⃣ Hent eksisterende restore-historikk
+    // 2️⃣ Hent restore-historikk
     let usage = await kv.get(key);
     usage = usage || [];
 
-    // 3️⃣ Fjern restores eldre enn WINDOW
-    usage = usage.filter(ts => now - ts < WINDOW_MS);
+    // 3️⃣ Fjern gamle restores
+    usage = usage.filter(function (ts) {
+      return now - ts < WINDOW_MS;
+    });
 
     if (usage.length >= MAX_RESTORES) {
       return res.status(429).json({
-        error: Gjenoppretting kan kun brukes ${MAX_RESTORES} ganger per ${WINDOW_DAYS} dager.
+        error:
+          "Gjenoppretting kan kun brukes " +
+          MAX_RESTORES +
+          " ganger per " +
+          WINDOW_DAYS +
+          " dager."
       });
     }
 
@@ -61,9 +68,9 @@ module.exports = async function handler(req, res) {
 
     const validStatuses = ["active", "trialing"];
 
-    const hasActive = subs.data.some(sub =>
-      validStatuses.includes(sub.status)
-    );
+    const hasActive = subs.data.some(function (sub) {
+      return validStatuses.includes(sub.status);
+    });
 
     if (!hasActive) {
       return res.status(403).json({
@@ -71,7 +78,7 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // 5️⃣ Registrer nytt restore
+    // 5️⃣ Registrer restore
     usage.push(now);
 
     await kv.set(key, usage, {
@@ -79,14 +86,18 @@ module.exports = async function handler(req, res) {
     });
 
     // 6️⃣ Logg restore (90 dager)
-    await kv.set("restore_log:" + now, {
-      customerId,
-      email: normalizedEmail,
-      ip,
-      timestamp: now
-    }, {
-      ex: 60 * 60 * 24 * 90
-    });
+    await kv.set(
+      "restore_log:" + now,
+      {
+        customerId: customerId,
+        email: normalizedEmail,
+        ip: ip,
+        timestamp: now
+      },
+      {
+        ex: 60 * 60 * 24 * 90
+      }
+    );
 
     return res.status(200).json({ success: true });
 
