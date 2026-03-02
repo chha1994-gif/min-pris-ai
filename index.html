@@ -319,40 +319,66 @@ let stripeSource = null;
   });
 }
 
+/************************************************************
+ * MINPRIS PRO ENGINE – CLEAN VERSION (March 2026)
+ ************************************************************/
+
+let isProUser = false;
+let proStatusLoaded = false;
+
+/**
+ * Henter Pro-status fra backend (Stripe)
+ */
 async function checkProStatus() {
-
-  // Start alltid som gratis
-  window.isPro = false;
-  disableProUI();
-
-  const customerId = localStorage.getItem("stripeCustomerId");
-
-  if (!customerId) {
-    return;
-  }
-
   try {
-    const res = await fetch("/api/check-pro", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customerId })
+    const res = await fetch('/api/check-pro', {
+      credentials: 'include'
     });
+
+    if (!res.ok) {
+      console.warn("check-pro failed with status:", res.status);
+      isProUser = false;
+      proStatusLoaded = true;
+      return;
+    }
 
     const data = await res.json();
 
     if (data.pro === true) {
-      window.isPro = true;
-      enableProUI();
+      isProUser = true;
+      localStorage.setItem("minpris_pro", "true");
+      console.log("✅ Pro aktivert via Stripe");
     } else {
-      window.isPro = false;
-      disableProUI();
+      isProUser = false;
+      localStorage.removeItem("minpris_pro");
+      console.log("❌ Ikke Pro ifølge Stripe");
     }
 
   } catch (err) {
     console.error("checkProStatus error:", err);
-    window.isPro = false;
-    disableProUI();
+
+    // Offline fallback
+    if (localStorage.getItem("minpris_pro") === "true") {
+      isProUser = true;
+      console.log("🟡 Offline fallback: Pro via localStorage");
+    } else {
+      isProUser = false;
+    }
+
+  } finally {
+    proStatusLoaded = true;
   }
+}
+
+/**
+ * Sjekk om bruker har Pro
+ */
+function harPro() {
+  if (!proStatusLoaded) {
+    console.log("⏳ Pro-status ikke lastet ennå – midlertidig tillatt");
+    return true; // Hindrer ghost paywall før status er kjent
+  }
+  return isProUser;
 }
   
 function gratisBrukt(type) {
@@ -369,21 +395,13 @@ function merkGratisBrukt(type) {
   const reactivateBtn = document.getElementById("reactivateBtn");
   const manageBtn = document.getElementById("adminBtn");
 
-  if (badge) {
-    badge.classList.remove("hidden");
-    badge.style.display = "inline-block";
-  }
+  if (badge) badge.classList.remove("hidden");
 
-  if (restoreBtn) {
-    restoreBtn.style.display = "none";
-  }
+  if (restoreBtn) restoreBtn.classList.add("hidden");
 
-  if (reactivateBtn) {
-    reactivateBtn.classList.add("hidden");
-  }
-    if (manageBtn) {
-  manageBtn.style.display = "block";
-}
+  if (reactivateBtn) reactivateBtn.classList.add("hidden");
+
+  if (manageBtn) manageBtn.classList.remove("hidden");
 }
 
 function disableProUI() {
@@ -392,21 +410,13 @@ function disableProUI() {
   const reactivateBtn = document.getElementById("reactivateBtn");
   const manageBtn = document.getElementById("adminBtn");
 
-  if (badge) {
-    badge.classList.add("hidden");
-    badge.style.display = "none";
-  }
+  if (badge) badge.classList.add("hidden");
 
-  if (restoreBtn) {
-    restoreBtn.style.display = "block";
-  }
+  if (restoreBtn) restoreBtn.classList.remove("hidden");
 
-  if (reactivateBtn) {
-    reactivateBtn.classList.add("hidden");
-  }
-  if (manageBtn) {
-  manageBtn.style.display = "none";
-}
+  if (reactivateBtn) reactivateBtn.classList.add("hidden");
+
+  if (manageBtn) manageBtn.classList.add("hidden");
 }
 
 function forStripe(type) {
@@ -730,87 +740,10 @@ async function gjenopptaAbonnement() {
     alert("Teknisk feil");
   }
 }
+  document.addEventListener("DOMContentLoaded", () => {
+  checkProStatus();
+});
 
-</script>
-  
-  <script>
-async function checkProStatus() {
-
-  function getCookie(name) {
-    const value = "; " + document.cookie;
-    const parts = value.split("; " + name + "=");
-    if (parts.length === 2) return parts.pop().split(";").shift();
-    return null;
-  }
-
-  let customerId = localStorage.getItem("stripeCustomerId");
-
-  // ✅ Cookie → LS sync
-  if (!customerId) {
-    customerId = getCookie("stripeCustomerId");
-    if (customerId) {
-      localStorage.setItem("stripeCustomerId", customerId);
-      console.log("🍪 → 💾 Cookie synced to LS");
-    }
-  }
-
-  // ✅ LS → Cookie failsafe
-  if (customerId && !getCookie("stripeCustomerId")) {
-    document.cookie =
-      "stripeCustomerId=" + customerId +
-      "; path=/; max-age=31536000; Secure; SameSite=Lax";
-    console.log("💾 → 🍪 LS synced back to cookie");
-  }
-
-  const proFlag = localStorage.getItem("minpris_pro");
-
-  // ✅ Offline fallback (cache safe)
-  if (proFlag === "1") {
-    console.log("🟢 Pro fallback via minpris_pro");
-    enableProUI();
-    return;
-  }
-
-  // ❌ Ingen Stripe ID → gratis
-  if (!customerId) {
-    disableProUI();
-    return;
-  }
-
-  try {
-    const res = await fetch("/api/check-pro", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customerId })
-    });
-
-    const data = await res.json();
-    console.log("🔎 check-pro response:", data);
-
-    if (data.pro) {
-      enableProUI();
-      localStorage.setItem("minpris_pro", "1");
-    } else {
-      disableProUI();
-      localStorage.removeItem("minpris_pro");
-    }
-
-  } catch (err) {
-    console.log("⚠️ Offline - bruker lokal Pro-state");
-
-    if (proFlag === "1") {
-      enableProUI();
-    } else {
-      disableProUI();
-    }
-  }
-}
-
-// 🚀 Initial check
-checkProStatus();
-
-// 🔁 Refresh ved app-return / Stripe Portal
-window.addEventListener("focus", checkProStatus);
 </script>
 
 <script>
