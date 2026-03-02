@@ -558,7 +558,7 @@ function visEkstraPoster() {
 
 async function beregnKm() {
 
-  if (!window.isPro) {
+  if (!harPro()) {
     if (gratisBrukt("km")) {
       return forStripe("km");
     }
@@ -573,11 +573,11 @@ async function beregnKm() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      start: firmaadresse.value,
-      end: kundeadresse.value
+      fra: firmaadresse.value,
+      til: kundeadresse.value
     })
   });
-
+  
   const data = await res.json();
 
   let km = data.km;
@@ -637,7 +637,7 @@ Totalt inkl. mva (25%): ${formatKr(totalInk)} kr`;
 
 async function genererTilbud() {
 
-  if (!window.isPro) {
+  if (!harPro()) {
     if (gratisBrukt("ai")) {
       return forStripe("ai");
     }
