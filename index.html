@@ -336,23 +336,27 @@ async function checkProStatus() {
     });
 
     if (!res.ok) {
-      console.warn("check-pro failed with status:", res.status);
-      isProUser = false;
-      proStatusLoaded = true;
-      return;
-    }
+  console.warn("check-pro failed:", res.status);
+  isProUser = false;
+  localStorage.removeItem("minpris_pro");
+  disableProUI();
+  proStatusLoaded = true;
+  return;
+}
 
-    const data = await res.json();
+const data = await res.json();
 
-    if (data.pro === true) {
-      isProUser = true;
-      localStorage.setItem("minpris_pro", "true");
-      console.log("✅ Pro aktivert via Stripe");
-    } else {
-      isProUser = false;
-      localStorage.removeItem("minpris_pro");
-      console.log("❌ Ikke Pro ifølge Stripe");
-    }
+if (data.pro === true) {
+  isProUser = true;
+  localStorage.setItem("minpris_pro", "true");
+  enableProUI();
+  console.log("✅ Pro aktivert via Stripe");
+} else {
+  isProUser = false;
+  localStorage.removeItem("minpris_pro");
+  disableProUI();
+  console.log("❌ Ikke Pro ifølge Stripe");
+}
 
   } catch (err) {
     console.error("checkProStatus error:", err);
