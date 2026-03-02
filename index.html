@@ -558,7 +558,7 @@ function visEkstraPoster() {
 
 async function beregnKm() {
 
-  if (!harPro()) {
+if (!harPro()) {
     if (gratisBrukt("km")) {
       return forStripe("km");
     }
@@ -569,34 +569,21 @@ async function beregnKm() {
     return alert("Fyll inn begge adresser");
   }
 
- const res = await fetch("/api/route", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    fra: firmaadresse.value,
-    til: kundeadresse.value
-  })
-});
+  const res = await fetch("/api/route", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      start: firmaadresse.value,
+      end: kundeadresse.value
+    })
+  });
 
-if (!res.ok) {
-  const text = await res.text();
-  console.error("Route error:", res.status, text);
-  alert("Kunne ikke beregne avstand");
-  return;
-}
+  const data = await res.json();
 
-const data = await res.json();
+  let km = data.km;
+  if (turRetur.checked) km *= 2;
 
-let km = Number(data.km);
-
-if (isNaN(km)) {
-  alert("Ugyldig km-verdi fra server");
-  return;
-}
-
-if (turRetur.checked) km *= 2;
-
-kmPerDag.value = km.toFixed(1);
+  kmPerDag.value = km.toFixed(1);
 }
 
 function beregn() {
