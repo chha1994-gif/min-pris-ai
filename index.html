@@ -336,27 +336,41 @@ async function checkProStatus() {
     });
 
     if (!res.ok) {
-  console.warn("check-pro failed:", res.status);
-  isProUser = false;
-  localStorage.removeItem("minpris_pro");
-  disableProUI();
-  proStatusLoaded = true;
-  return;
-}
+      console.warn("check-pro failed:", res.status);
 
-const data = await res.json();
+      isProUser = false;
+      localStorage.removeItem("minpris_pro");
 
-if (data.pro === true) {
-  isProUser = true;
-  localStorage.setItem("minpris_pro", "true");
-  enableProUI();
-  console.log("✅ Pro aktivert via Stripe");
-} else {
-  isProUser = false;
-  localStorage.removeItem("minpris_pro");
-  disableProUI();
-  console.log("❌ Ikke Pro ifølge Stripe");
-}
+      disableProUI();
+
+      return;
+    }
+
+    const data = await res.json();
+
+    if (data.pro === true) {
+      isProUser = true;
+      localStorage.setItem("minpris_pro", "true");
+
+      enableProUI();
+
+      // 🔥 Viktig: vis admin-knapp (inline style fix)
+      const adminBtn = document.getElementById("adminBtn");
+      if (adminBtn) adminBtn.style.display = "block";
+
+      console.log("✅ Pro aktivert via Stripe");
+
+    } else {
+      isProUser = false;
+      localStorage.removeItem("minpris_pro");
+
+      disableProUI();
+
+      const adminBtn = document.getElementById("adminBtn");
+      if (adminBtn) adminBtn.style.display = "none";
+
+      console.log("❌ Ikke Pro ifølge Stripe");
+    }
 
   } catch (err) {
     console.error("checkProStatus error:", err);
@@ -364,13 +378,19 @@ if (data.pro === true) {
     // Offline fallback
     if (localStorage.getItem("minpris_pro") === "true") {
       isProUser = true;
+      enableProUI();
+
+      const adminBtn = document.getElementById("adminBtn");
+      if (adminBtn) adminBtn.style.display = "block";
+
       console.log("🟡 Offline fallback: Pro via localStorage");
     } else {
       isProUser = false;
-    }
+      disableProUI();
 
-  } finally {
-    proStatusLoaded = true;
+      const adminBtn = document.getElementById("adminBtn");
+      if (adminBtn) adminBtn.style.display = "none";
+    }
   }
 }
 
