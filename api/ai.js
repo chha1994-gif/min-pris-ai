@@ -6,26 +6,28 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const {
-      beskrivelse,
-      timer,
-      dager,
-      timepris,
+    const body = req.body || {};
 
-      arbeid,
-      kjøring,
-      bom,
-      avfall,
-      materiell,
-      hms,
+    const beskrivelse = body.beskrivelse;
+    const timer = body.timer;
+    const dager = body.dager;
+    const timepris = body.timepris;
 
-      kmPerDag,
+    const arbeid = body.arbeid;
+    const kjoring = body.kjoring || body.kjøring;
+    const bom = body.bom;
+    const avfall = body.avfall;
+    const materiell = body.materiell;
+    const hms = body.hms;
 
-      totalEksMva,
-      totalInkMva,
+    const kmPerDag = body.kmPerDag;
 
-      ekstraPoster
-    } = req.body;
+    const totalEksMva = body.totalEksMva;
+    const totalInkMva = body.totalInkMva;
+
+    const ekstraPoster = Array.isArray(body.ekstraPoster)
+      ? body.ekstraPoster
+      : [];
 
     if (
       beskrivelse == null ||
@@ -38,11 +40,12 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    const round = (n) => Math.round(Number(n) || 0);
+    function round(n) {
+      return Math.round(Number(n) || 0);
+    }
 
-    // 🔥 Rund alle tall før de sendes til AI
     const arbeidR = round(arbeid);
-    const kjøringR = round(kjøring);
+    const kjoringR = round(kjoring);
     const bomR = round(bom);
     const avfallR = round(avfall);
     const materiellR = round(materiell);
@@ -50,57 +53,49 @@ module.exports = async function handler(req, res) {
     const totalEksMvaR = round(totalEksMva);
     const totalInkMvaR = round(totalInkMva);
 
-    // 🔥 Rund ekstra poster også
-    const ekstraPosterR =
-      ekstraPoster && ekstraPoster.length > 0
-        ? ekstraPoster.map(p => ({
-            navn: p.navn,
-            pris: round(p.pris)
-          }))
-        : [];
+    var ekstraPosterTekst = "";
 
-    const ekstraPosterTekst =
-  ekstraPosterR.length > 0
-    ? ekstraPosterR
-        .map(p => ${p.navn}: ${p.pris} kr)
-        .join("\n")
-    : null;
+    if (ekstraPoster.length > 0) {
+      for (var i = 0; i < ekstraPoster.length; i++) {
+        var p = ekstraPoster[i];
+        ekstraPosterTekst +=
+          p.navn + ": " + round(p.pris) + " kr\n";
+      }
+    }
 
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
 
-    const prompt = `
-Du er en profesjonell norsk håndverker som skriver tilbud til kunde.
+    var prompt = "";
+    prompt += "Du er en profesjonell norsk håndverker som skriver tilbud til kunde.\n\n";
+    prompt += "Jobbbeskrivelse:\n";
+    prompt += beskrivelse + "\n\n";
+    prompt += "Kalkyle (ferdig beregnet – tallene er endelige):\n";
+    prompt += "Arbeid (" + timer + " timer × " + timepris + " kr): " + arbeidR + " kr\n";
+    prompt += "Kjøring (" + kmPerDag + " km per dag i " + dager + " dager): " + kjoringR + " kr\n";
+    prompt += "Bom: " + bomR + " kr\n";
+    prompt += "Avfall: " + avfallR + " kr\n";
+    prompt += "Materiell: " + materiellR + " kr\n";
+    prompt += "HMS-forbruk: " + hmsR + " kr\n";
 
-Jobbbeskrivelse:
-${beskrivelse}
+    if (ekstraPosterTekst) {
+      prompt += "Ekstra poster:\n" + ekstraPosterTekst + "\n";
+    }
 
-Kalkyle (ferdig beregnet – tallene er endelige):
-Arbeid (${timer} timer × ${timepris} kr): ${arbeidR} kr
-Kjøring (${kmPerDag} km per dag i ${dager} dager): ${kjøringR} kr
-Bom: ${bomR} kr
-Avfall: ${avfallR} kr
-Materiell: ${materiellR} kr
-HMS-forbruk: ${hmsR} kr
-${ekstraPosterTekst ? Ekstra poster:\n${ekstraPosterTekst} : ""}
-
-Totalt eks. mva: ${totalEksMvaR} kr
-Totalt inkl. mva: ${totalInkMvaR} kr
-
-VIKTIG – MÅ FØLGES:
-- Alle tall over er endelige og skal brukes nøyaktig slik de er oppgitt
-- Ikke endre, tolke, estimere eller runde tall
-- Ikke legg til nye kostnader eller forutsetninger
-- Dersom ekstra poster er oppgitt, skal disse inkluderes i tilbudsteksten
-- Ikke bruk emoji
-
-Oppgave:
-Skriv en profesjonell og ryddig tilbudstekst på norsk.
-Del gjerne opp i avsnitt.
-Forklar kort hva tilbudet inkluderer.
-Avslutt med en høflig setning om at kunden gjerne kan ta kontakt ved spørsmål.
-`;
+    prompt += "Totalt eks. mva: " + totalEksMvaR + " kr\n";
+    prompt += "Totalt inkl. mva: " + totalInkMvaR + " kr\n\n";
+    prompt += "VIKTIG – MÅ FØLGES:\n";
+    prompt += "- Alle tall over er endelige og skal brukes nøyaktig slik de er oppgitt\n";
+    prompt += "- Ikke endre, tolke, estimere eller runde tall\n";
+    prompt += "- Ikke legg til nye kostnader eller forutsetninger\n";
+    prompt += "- Dersom ekstra poster er oppgitt, skal disse inkluderes i tilbudsteksten\n";
+    prompt += "- Ikke bruk emoji\n\n";
+    prompt += "Oppgave:\n";
+    prompt += "Skriv en profesjonell og ryddig tilbudstekst på norsk.\n";
+    prompt += "Del gjerne opp i avsnitt.\n";
+    prompt += "Forklar kort hva tilbudet inkluderer.\n";
+    prompt += "Avslutt med en høflig setning om at kunden gjerne kan ta kontakt ved spørsmål.\n";
 
     const response = await client.responses.create({
       model: "gpt-4.1-mini",
@@ -108,8 +103,13 @@ Avslutt med en høflig setning om at kunden gjerne kan ta kontakt ved spørsmål
     });
 
     const text =
-      response.output?.[0]?.content?.[0]?.text ||
-      "Kunne ikke generere tilbudstekst.";
+      response.output &&
+      response.output[0] &&
+      response.output[0].content &&
+      response.output[0].content[0] &&
+      response.output[0].content[0].text
+        ? response.output[0].content[0].text
+        : "Kunne ikke generere tilbudstekst.";
 
     return res.status(200).json({ text });
 
@@ -120,4 +120,4 @@ Avslutt med en høflig setning om at kunden gjerne kan ta kontakt ved spørsmål
       message: err.message
     });
   }
-}
+};
