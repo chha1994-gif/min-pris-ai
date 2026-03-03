@@ -60,11 +60,11 @@ module.exports = async function handler(req, res) {
         : [];
 
     const ekstraPosterTekst =
-      ekstraPosterR.length > 0
-        ? ekstraPosterR
-            .map(p => ${p.navn}: ${p.pris} kr)
-            .join("\n")
-        : null;
+  ekstraPosterR.length > 0
+    ? ekstraPosterR
+        .map(p => ${p.navn}: ${p.pris} kr)
+        .join("\n")
+    : null;
 
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
