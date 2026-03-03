@@ -1,33 +1,31 @@
-const OpenAI = require("openai");
+import OpenAI from "openai";
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const body = req.body || {};
+    const {
+      beskrivelse,
+      timer,
+      dager,
+      timepris,
 
-    const beskrivelse = body.beskrivelse;
-    const timer = body.timer;
-    const dager = body.dager;
-    const timepris = body.timepris;
+      arbeid,
+      kjøring,
+      bom,
+      avfall,
+      materiell,
+      hms,
 
-    const arbeid = body.arbeid;
-    const kjoring = body.kjoring || body.kjøring;
-    const bom = body.bom;
-    const avfall = body.avfall;
-    const materiell = body.materiell;
-    const hms = body.hms;
+      kmPerDag,
 
-    const kmPerDag = body.kmPerDag;
+      totalEksMva,
+      totalInkMva,
 
-    const totalEksMva = body.totalEksMva;
-    const totalInkMva = body.totalInkMva;
-
-    const ekstraPoster = Array.isArray(body.ekstraPoster)
-      ? body.ekstraPoster
-      : [];
+      ekstraPoster   // ✅ lagt til
+    } = req.body;
 
     if (
       beskrivelse == null ||
@@ -40,62 +38,59 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    function round(n) {
-      return Math.round(Number(n) || 0);
-    }
+    // ✅ Rund summer før de brukes
+    const arbeidR = Math.round(Number(arbeid) || 0);
+    const kjøringR = Math.round(Number(kjøring) || 0);
+    const bomR = Math.round(Number(bom) || 0);
+    const avfallR = Math.round(Number(avfall) || 0);
+    const materiellR = Math.round(Number(materiell) || 0);
+    const hmsR = Math.round(Number(hms) || 0);
+    const totalEksMvaR = Math.round(Number(totalEksMva) || 0);
+    const totalInkMvaR = Math.round(Number(totalInkMva) || 0);
 
-    const arbeidR = round(arbeid);
-    const kjoringR = round(kjoring);
-    const bomR = round(bom);
-    const avfallR = round(avfall);
-    const materiellR = round(materiell);
-    const hmsR = round(hms);
-    const totalEksMvaR = round(totalEksMva);
-    const totalInkMvaR = round(totalInkMva);
-
-    var ekstraPosterTekst = "";
-
-    if (ekstraPoster.length > 0) {
-      for (var i = 0; i < ekstraPoster.length; i++) {
-        var p = ekstraPoster[i];
-        ekstraPosterTekst +=
-          p.navn + ": " + round(p.pris) + " kr\n";
-      }
-    }
+    // ✅ Bygg ekstra poster tekst (hvis finnes)
+    const ekstraPosterTekst =
+      Array.isArray(ekstraPoster) && ekstraPoster.length > 0
+        ? ekstraPoster
+            .map(p => `${p.navn}: ${Math.round(Number(p.pris) || 0)} kr`)
+            .join("\n")
+        : "";
 
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
 
-    var prompt = "";
-    prompt += "Du er en profesjonell norsk håndverker som skriver tilbud til kunde.\n\n";
-    prompt += "Jobbbeskrivelse:\n";
-    prompt += beskrivelse + "\n\n";
-    prompt += "Kalkyle (ferdig beregnet – tallene er endelige):\n";
-    prompt += "Arbeid (" + timer + " timer × " + timepris + " kr): " + arbeidR + " kr\n";
-    prompt += "Kjøring (" + kmPerDag + " km per dag i " + dager + " dager): " + kjoringR + " kr\n";
-    prompt += "Bom: " + bomR + " kr\n";
-    prompt += "Avfall: " + avfallR + " kr\n";
-    prompt += "Materiell: " + materiellR + " kr\n";
-    prompt += "HMS-forbruk: " + hmsR + " kr\n";
+    const prompt = `
+Du er en profesjonell norsk håndverker som skriver tilbud til kunde.
 
-    if (ekstraPosterTekst) {
-      prompt += "Ekstra poster:\n" + ekstraPosterTekst + "\n";
-    }
+Jobbbeskrivelse:
+${beskrivelse}
 
-    prompt += "Totalt eks. mva: " + totalEksMvaR + " kr\n";
-    prompt += "Totalt inkl. mva: " + totalInkMvaR + " kr\n\n";
-    prompt += "VIKTIG – MÅ FØLGES:\n";
-    prompt += "- Alle tall over er endelige og skal brukes nøyaktig slik de er oppgitt\n";
-    prompt += "- Ikke endre, tolke, estimere eller runde tall\n";
-    prompt += "- Ikke legg til nye kostnader eller forutsetninger\n";
-    prompt += "- Dersom ekstra poster er oppgitt, skal disse inkluderes i tilbudsteksten\n";
-    prompt += "- Ikke bruk emoji\n\n";
-    prompt += "Oppgave:\n";
-    prompt += "Skriv en profesjonell og ryddig tilbudstekst på norsk.\n";
-    prompt += "Del gjerne opp i avsnitt.\n";
-    prompt += "Forklar kort hva tilbudet inkluderer.\n";
-    prompt += "Avslutt med en høflig setning om at kunden gjerne kan ta kontakt ved spørsmål.\n";
+Kalkyle (ferdig beregnet – tallene er endelige):
+Arbeid (${timer} timer × ${timepris} kr): ${arbeidR} kr
+Kjøring (${kmPerDag} km per dag i ${dager} dager): ${kjøringR} kr
+Bom: ${bomR} kr
+Avfall: ${avfallR} kr
+Materiell: ${materiellR} kr
+HMS-forbruk: ${hmsR} kr
+${ekstraPosterTekst ? `Ekstra poster:\n${ekstraPosterTekst}\n` : ""}
+
+Totalt eks. mva: ${totalEksMvaR} kr
+Totalt inkl. mva: ${totalInkMvaR} kr
+
+VIKTIG – MÅ FØLGES:
+- Alle tall over er endelige og skal brukes nøyaktig slik de er oppgitt
+- Ikke endre, tolke, estimere eller runde tall
+- Ikke legg til nye kostnader eller forutsetninger
+- Dersom ekstra poster er oppgitt, skal disse inkluderes i tilbudsteksten
+- Ikke bruk emoji
+
+Oppgave:
+Skriv en profesjonell og ryddig tilbudstekst på norsk.
+Del gjerne opp i avsnitt.
+Forklar kort hva tilbudet inkluderer.
+Avslutt med en høflig setning om at kunden gjerne kan ta kontakt ved spørsmål.
+`;
 
     const response = await client.responses.create({
       model: "gpt-4.1-mini",
@@ -103,13 +98,8 @@ module.exports = async function handler(req, res) {
     });
 
     const text =
-      response.output &&
-      response.output[0] &&
-      response.output[0].content &&
-      response.output[0].content[0] &&
-      response.output[0].content[0].text
-        ? response.output[0].content[0].text
-        : "Kunne ikke generere tilbudstekst.";
+      response.output?.[0]?.content?.[0]?.text ||
+      "Kunne ikke generere tilbudstekst.";
 
     return res.status(200).json({ text });
 
@@ -120,4 +110,4 @@ module.exports = async function handler(req, res) {
       message: err.message
     });
   }
-};
+}
