@@ -38,7 +38,7 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    const round = 👎 => Math.round(Number(n) || 0);
+    const round = (n) => Math.round(Number(n) || 0);
 
     // 🔥 Rund alle tall før de sendes til AI
     const arbeidR = round(arbeid);
